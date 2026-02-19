@@ -1,0 +1,157 @@
+@import "filepond/dist/filepond.min.css";
+@import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
+@import "dropify/dist/css/dropify.min.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+
+
+.bg-background{
+    background-color: hsl(0 0% 96%);
+}
+
+/* Container utama */
+.dropify-wrapper {
+    height: 100%;
+    border-radius: 0.75rem; /* rounded-lg */
+    border: 2px dashed #d1d5db; /* gray-300 */
+    background-color: #f9fafb; /* gray-50 */
+    transition: all 0.2s ease;
+}
+
+/* Hover */
+.dropify-wrapper:hover {
+    border-color: #fb923c; /* orange-400 */
+    background-color: #fff7ed; /* orange-50 */
+}
+
+/* Area label */
+.dropify-wrapper .dropify-message {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* Icon */
+.dropify-wrapper .dropify-message span.file-icon {
+    font-size: 2rem;
+    color: #9ca3af; /* gray-400 */
+}
+
+/* Text */
+.dropify-wrapper .dropify-message p {
+    font-size: 0.875rem;
+    color: #6b7280; /* gray-500 */
+}
+
+/* Saat ada file */
+.dropify-wrapper.has-preview {
+    border-style: solid;
+    background-color: #ffffff;
+}
+
+/* Hide credit */
+.dropify-wrapper .dropify-infos-message,
+.dropify-wrapper .dropify-clear,
+.dropify-wrapper .dropify-errors-container {
+    font-family: inherit;
+}
+
+/* Preview container */
+.dropify-wrapper .dropify-preview {
+    background-color: #ffffff;
+    padding: 0;
+}
+
+/* FIX UTAMA: image center + contain */
+.dropify-wrapper .dropify-preview .dropify-render img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;   /* PENTING */
+    object-position: center;
+    margin: auto;
+}
+
+/* Render area full */
+.dropify-wrapper .dropify-render {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+/* Remove text overlay */
+.dropify-wrapper .dropify-preview .dropify-infos {
+    display: none;
+}
+
+.select2-container .select2-selection--single {
+    height: auto !important;
+}
+
+.select2-container--default .select2-selection--single {
+    border-color: rgb(209 213 219 / var(--tw-border-opacity, 1));
+    padding: 3px !important;
+    border-radius: 7px !important;
+    border: 1px solid !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 31px !important;
+    right: 4px !important;
+}
+
+.select2-selection__choice {
+    background-color: #fed7aa !important;
+    border: none !important;
+    color: #9a3412 !important;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+}
+
+.select2-selection__choice__remove {
+    color: #9a3412 !important;
+}
+
+/* bikin selection jadi anchor positioning */
+.select2-container--default .select2-selection {
+    position: relative;
+}
+
+/* icon chevron */
+.select2-container--default .select2-selection::after {
+    font-weight: 900;
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #9ca3af;
+    pointer-events: none;
+}
+
+/* khusus multiple: kasih ruang kanan biar teks/tag ga nabrak icon */
+.select2-container--default .select2-selection--multiple {
+    border-radius: .5rem !important;
+    padding: 2px 7px 7px 6px !important;
+}
+
+.select2-container--focus .select2-selection--multiple {
+    border-color: #f97316;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.4);
+}

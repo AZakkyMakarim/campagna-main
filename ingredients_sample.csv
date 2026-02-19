@@ -1,0 +1,7 @@
+name,type,base_unit,min_stock,sellable
+Tepung Terigu,raw,kg,10,0
+Gula Pasir,raw,kg,5,0
+Telur Ayam,raw,pcs,20,0
+Roti Tawar,semi,pcs,10,0
+Nasi Goreng Spesial,finished,porsi,0,1
+Es Teh Manis,finished,porsi,0,1
