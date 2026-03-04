@@ -12,56 +12,56 @@
     >
 
         {{-- ORDER META --}}
-        <div class="bg-white rounded-xl border p-4 mb-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+{{--        <div class="bg-white rounded-xl border p-4 mb-4">--}}
+{{--            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">--}}
 
-                {{-- TIPE PESANAN --}}
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Tipe Pesanan
-                    </label>
-                    <select
-                        x-model="orderType"
-                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
-                    >
-                        <option value="">Tipe Pesanan</option>
-                        @foreach(config('array.order.type') as $key => $type)
-                            <option value="{{ $key }}">{{ $type['display_name'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
+{{--                --}}{{-- TIPE PESANAN --}}
+{{--                <div>--}}
+{{--                    <label class="block text-xs font-semibold text-gray-600 mb-1">--}}
+{{--                        Tipe Pesanan--}}
+{{--                    </label>--}}
+{{--                    <select--}}
+{{--                        x-model="orderType"--}}
+{{--                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"--}}
+{{--                    >--}}
+{{--                        <option value="">Tipe Pesanan</option>--}}
+{{--                        @foreach(config('array.order.type') as $key => $type)--}}
+{{--                            <option value="{{ $key }}">{{ $type['display_name'] }}</option>--}}
+{{--                        @endforeach--}}
+{{--                    </select>--}}
+{{--                </div>--}}
 
-                {{-- JENIS ORDER --}}
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Jenis Order
-                    </label>
-                    <select
-                        x-model="orderChannel"
-                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
-                    >
-                        <option value="">Jenis Order</option>
-                        @foreach(config('array.order.channel') as $key => $channel)
-                            <option value="{{ $key }}">{{ $channel['display_name'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
+{{--                --}}{{-- JENIS ORDER --}}
+{{--                <div>--}}
+{{--                    <label class="block text-xs font-semibold text-gray-600 mb-1">--}}
+{{--                        Jenis Order--}}
+{{--                    </label>--}}
+{{--                    <select--}}
+{{--                        x-model="orderChannel"--}}
+{{--                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"--}}
+{{--                    >--}}
+{{--                        <option value="">Jenis Order</option>--}}
+{{--                        @foreach(config('array.order.channel') as $key => $channel)--}}
+{{--                            <option value="{{ $key }}">{{ $channel['display_name'] }}</option>--}}
+{{--                        @endforeach--}}
+{{--                    </select>--}}
+{{--                </div>--}}
 
-                {{-- NOMOR MEJA (DINE IN) --}}
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Nomor Meja
-                    </label>
-                    <input
-                        type="text"
-                        x-model="tableNumber"
-                        placeholder="Contoh: A1 / 5 / VIP"
-                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
-                    >
-                </div>
+{{--                --}}{{-- NOMOR MEJA (DINE IN) --}}
+{{--                <div>--}}
+{{--                    <label class="block text-xs font-semibold text-gray-600 mb-1">--}}
+{{--                        Nomor Meja--}}
+{{--                    </label>--}}
+{{--                    <input--}}
+{{--                        type="text"--}}
+{{--                        x-model="tableNumber"--}}
+{{--                        placeholder="Contoh: A1 / 5 / VIP"--}}
+{{--                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"--}}
+{{--                    >--}}
+{{--                </div>--}}
 
-            </div>
-        </div>
+{{--            </div>--}}
+{{--        </div>--}}
 
         <div class="grid grid-cols-12 gap-4">
             {{-- LEFT : MENU LIST --}}
@@ -363,6 +363,75 @@
 
         </div>
 
+        <!-- MODAL ORDER META -->
+        <div
+            x-show="orderMetaOpen"
+            x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center"
+        >
+            <div class="absolute inset-0 bg-black/60"></div>
+
+            <div class="relative bg-white w-full max-w-md rounded-xl shadow-xl p-6 space-y-5">
+
+                <h2 class="text-lg font-semibold">Informasi Order</h2>
+
+                <!-- TIPE PESANAN -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">
+                        Tipe Pesanan
+                    </label>
+                    <select x-model="orderType" class="w-full border rounded-lg px-3 py-2">
+                        <option value="">Pilih Tipe</option>
+                        @foreach(config('array.order.type') as $key => $type)
+                            <option value="{{ $key }}">{{ $type['display_name'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- JENIS ORDER -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">
+                        Jenis Order
+                    </label>
+                    <select x-model="orderChannel" class="w-full border rounded-lg px-3 py-2">
+                        <option value="">Pilih Jenis</option>
+                        @foreach(config('array.order.channel') as $key => $channel)
+                            <option value="{{ $key }}">{{ $channel['display_name'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- NOMOR MEJA -->
+                <div x-show="orderType === 'dine_in'">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">
+                        Nomor Meja
+                    </label>
+                    <input
+                        type="text"
+                        x-model="tableNumber"
+                        placeholder="Contoh: A1 / 5 / VIP"
+                        class="w-full border rounded-lg px-3 py-2"
+                    >
+                </div>
+
+                <div class="flex gap-3">
+                    <button
+                        class="flex-1 border py-2 rounded-lg"
+                        @click="orderMetaOpen = false"
+                    >
+                        Batal
+                    </button>
+
+                    <button
+                        class="flex-1 bg-orange-600 text-white py-2 rounded-lg"
+                        @click="confirmOrderMeta()"
+                    >
+                        Lanjut ke Pembayaran
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- MODAL PAYMENT -->
         <div
             x-show="paymentOpen"
@@ -515,7 +584,7 @@
 
                     <!-- RIGHT : PAYMENT -->
                     <div class="space-y-6 pr-6">
-                        <div class="flex border-gray-200 bg-white border border-black rounded-xl p-2">
+                        <div class="flex border-gray-200 bg-white border rounded-xl p-2">
                             <button
                                 @click="paymentType = 'PAY'"
                                 :class="paymentType === 'PAY'
@@ -592,32 +661,6 @@
                                     >
                                         DP
                                     </button>
-                                    
-                                     <button
-                                        type="button"
-                                        @click="setPaymentMode('SPLIT')"
-                                        :class="paymentMode==='SPLIT' ? 'bg-orange-600 text-white' : 'border hover:bg-orange-100'"
-                                        class="rounded-md py-2 text-sm font-semibold col-span-2"
-                                    >
-                                        Split Payment (Min 2x)
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- SPLIT INFO -->
-                            <div x-show="paymentMode==='SPLIT'" class="bg-gray-50 border rounded-lg p-3 space-y-2">
-                                <template x-for="(hist, idx) in splitHistory">
-                                    <div class="flex justify-between text-xs text-gray-600">
-                                        <span x-text="`Pembayaran #${idx+1} (${hist.method})`"></span>
-                                        <span x-text="formatRp(hist.amount)"></span>
-                                    </div>
-                                </template>
-                                
-                                <hr x-show="splitHistory.length > 0">
-                                
-                                <div class="flex justify-between text-sm font-bold">
-                                    <span>Sisa Tagihan</span>
-                                    <span class="text-orange-600" x-text="formatRp(remainingAmount)"></span>
                                 </div>
                             </div>
 
@@ -676,10 +719,6 @@
                                         <template x-if="paymentMode==='DP'">
                                             <span>Nominal DP</span>
                                         </template>
-
-                                        <template x-if="paymentMode==='SPLIT'">
-                                            <span>Bayar Sebagian</span>
-                                        </template>
                                     </label>
                                     <input
                                         type="number"
@@ -726,11 +765,7 @@
                             @click="processPayment()"
                         >
                             <i class="fa fa-print"></i>
-                            <span x-show="paymentMode==='FULL'">Bayar & Cetak Struk</span>
-                            <span x-show="paymentMode==='DP'">Bayar DP</span>
-                            <span x-show="paymentMode==='SPLIT'">
-                                <span x-text="remainingAmount > payAmount ? 'Bayar Sebagian' : 'Bayar Lunas & Cetak'"></span>
-                            </span>
+                            <span x-text="paymentMode==='DP' ? 'Bayar DP' : 'Bayar & Cetak Struk'"></span>
                         </button>
 
                         <!-- ACTION DRAFT -->
@@ -798,23 +833,12 @@
                 customerName: '',
                 customerPhone: '',
 
-                paymentMode: 'FULL', // FULL | DP | SPLIT
+                paymentMode: 'FULL', // FULL | DP
                 paymentMethod: 'CASH',
                 payAmount: 0,
-                // SPLIT STATE
-                splitOrderId: null,
-                splitHistory: [],
-                
-                get remainingAmount() {
-                    if (this.paymentMode === 'SPLIT') {
-                        return Math.max(0, this.finalTotal() - this.totalPaidSplit);
-                    }
-                    return 0;
-                },
+                remainingAmount: 0,
 
-                get totalPaidSplit() {
-                    return this.splitHistory.reduce((sum, p) => sum + Number(p.amount), 0);
-                },
+                orderMetaOpen: false,
 
                 // =====================
                 // ADD MENU
@@ -933,51 +957,22 @@
                         return;
                     }
 
-                    if (!this.orderType) {
-                        alert('Tipe Pesanan wajib dipilih');
-                        return;
-                    }
-
-                    if (!this.orderChannel) {
-                        alert('Jenis Order wajib dipilih');
-                        return;
-                    }
-
-                    // optional: kalau dine-in wajib isi meja
-                    if (this.orderType === 'dine_in' && !this.tableNumber) {
-                        alert('Nomor meja wajib diisi untuk Dine In');
-                        return;
-                    }
-
-                    this.payAmount = this.finalTotal();
-                    this.paymentMethod = 'CASH';
-                    this.paymentOpen = true;
-                    this.splitOrderId = null;
-                    this.splitHistory = [];
+                    // jangan langsung validasi
+                    this.orderMetaOpen = true;
                 },
 
                 // 🔁 CLOSE PAYMENT
                 closePayment() {
-                    // Prevent close if split payment is in progress but not finished
-                    if (this.paymentMode === 'SPLIT' && this.splitOrderId && this.remainingAmount > 0) {
-                        if(!confirm('Transaksi split belum selesai. Yakin ingin tutup? (Data tersimpan di server)')) {
-                            return;
-                        }
-                    }
                     this.paymentOpen = false;
                 },
 
                 // 💰 KEMBALIAN
                 get change() {
                     if (this.paymentMode === 'DP') return 0;
-                    if (this.paymentMode === 'SPLIT') return 0; // handled logic elsewhere
                     return Math.max(0, this.payAmount - this.finalTotal());
                 },
 
                 setPaymentMode(mode) {
-                    // Disable changing mode if split transaction already started
-                    if (this.splitOrderId) return;
-
                     this.paymentMode = mode;
 
                     if (mode === 'FULL') {
@@ -986,10 +981,6 @@
 
                     if (mode === 'DP') {
                         this.payAmount = 0;
-                    }
-                    
-                    if (mode === 'SPLIT') {
-                        this.payAmount = 0; // User input manually
                     }
                 },
 
@@ -1005,11 +996,6 @@
                 // 🔥 PROCESS PAYMENT + PRINT
                 // =====================
                 async processPayment() {
-                    if (this.paymentMode === 'SPLIT') {
-                        await this.processSplitPayment();
-                        return;
-                    }
-
                     let data = JSON.stringify({
                         // ===== ORDER META =====
                         type: this.orderType,          // dine_in | take_away | delivery
@@ -1057,174 +1043,54 @@
                             return;
                         }
 
-                        this.printAndComplete(res.order, {
+                        const items = this.cart.map(item => ({
+                            name: item.name,
+                            qty: item.qty,
+                            price: item.price,
+                            subtotal: item.subtotal
+                        }));
+
+                        const order = {
+                            code: this.orderCode || '-',
+                            date: new Date().toLocaleString('id-ID'),
+                            table: this.tableNumber || null,
+                            sub_total: this.subTotal,
+                            adjustment_total: this.adjustmentTotal,
+                            grand_total: this.grandTotal
+                        };
+
+                        const payment = {
                             method: this.paymentMethod,
                             paid: this.payAmount,
                             change: this.change
+                        };
+
+                        const receipt = buildReceipt({
+                            outlet: {
+                                name: window.outletName,
+                                address: window.outletAddress || ''
+                            },
+                            cashier: window.cashierName,
+                            order,
+                            items,
+                            payment
                         });
+
+                        // kirim ke QZ / printer
+                        // printReceipt(receipt);
+
+                        // 🔄 RESET
+                        // this.resetOrder();
+                        // this.paymentOpen = false;
                     })
                     .catch(() => {
                         alert('Gagal memproses order');
+                    })
+                    .finally(() => {
+                        // 🔥 SELALU RESET
+                        this.resetOrder();
+                        this.paymentOpen = false;
                     });
-                },
-
-                async processSplitPayment() {
-                    if (this.payAmount <= 0) {
-                        alert('Nominal pembayaran tidak valid');
-                        return;
-                    }
-
-                    // FIRST SPLIT (CREATE ORDER)
-                    if (!this.splitOrderId) {
-                        let data = JSON.stringify({
-                            type: this.orderType,
-                            channel: this.orderChannel,
-                            table_number: this.tableNumber || null,
-                            items: this.cart.map(i => ({
-                                menu_id: i.menu_id,
-                                qty: i.qty,
-                                note: i.note || null
-                            })),
-                            payment_type: 'PAY', 
-                            payment: {
-                                mode: 'SPLIT',
-                                method: this.paymentMethod,
-                                amount: this.payAmount
-                            },
-                            customer_name: this.customerName || null,
-                            customer_phone: this.customerPhone || null,
-                            note: null
-                        });
-
-                        try {
-                            const res = await fetch('{{ route('transaction.order.store') }}', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                                body: data
-                            }).then(r => r.json());
-
-                            if (!res.success) {
-                                alert(res.message);
-                                return;
-                            }
-
-                            // Success create order
-                            this.splitOrderId = res.order.id;
-                            this.splitHistory.push({
-                                method: this.paymentMethod,
-                                amount: this.payAmount,
-                                date: new Date().toLocaleTimeString()
-                            });
-
-                            // Calculate remaining logic with current payAmount is not needed as history updated.
-                            // But we need to reset payAmount input
-                            this.payAmount = 0;
-
-                            // Check if completed (unlikely for first split unless full amount)
-                            if (this.remainingAmount <= 0) {
-                                this.printAndComplete(res.order, this.getCombinedPaymentInfo());
-                            } else {
-                                this.payAmount = this.remainingAmount; // Auto suggest remaining
-                            }
-
-                        } catch (e) {
-                            alert('Gagal memproses pembayaran split pertama');
-                        }
-                    } 
-                    // SUBSEQUENT SPLIT (ADD PAYMENT)
-                    else {
-                        let data = JSON.stringify({
-                            order_id: this.splitOrderId,
-                            method: this.paymentMethod,
-                            amount: this.payAmount
-                        });
-
-                        try {
-                            const res = await fetch('{{ route('transaction.list-order.pay') }}', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                                body: data
-                            }).then(r => r.json());
-
-                            if (!res.success) {
-                                alert(res.message);
-                                return;
-                            }
-
-                             this.splitHistory.push({
-                                method: this.paymentMethod,
-                                amount: this.payAmount,
-                                date: new Date().toLocaleTimeString()
-                            });
-                            
-                            this.payAmount = 0;
-
-                            if (this.remainingAmount <= 0) {
-                                // Fetch updated order to get full details matching printAndComplete expectation? 
-                                // Actually we can construct it partially or just use what we have. 
-                                // Need 'order' object. Since we don't have fresh order object here, 
-                                // we can construct a mock or fetch it. 
-                                // For simplicity let's construct mock order object based on known totals.
-                                const order = {
-                                    code: '-', // We might need to save code from first response
-                                    date: new Date().toLocaleString('id-ID'),
-                                    table: this.tableNumber,
-                                    sub_total: this.subTotal,
-                                    adjustment_total: this.adjustmentTotal,
-                                    grand_total: this.grandTotal
-                                };
-                                this.printAndComplete(order, this.getCombinedPaymentInfo());
-                            } else {
-                                this.payAmount = this.remainingAmount;
-                            }
-
-                        } catch (e) {
-                            alert('Gagal memproses pembayaran split lanjutan');
-                        }
-                    }
-                },
-
-                getCombinedPaymentInfo() {
-                    const totalPaid = this.totalPaidSplit;
-                    const change = Math.max(0, totalPaid - this.finalTotal());
-                    
-                    return {
-                        method: 'SPLIT (' + this.splitHistory.map(h => h.method).join(',') + ')',
-                        paid: totalPaid,
-                        change: change
-                    };
-                },
-
-                printAndComplete(order, paymentInfo) {
-                    const items = this.cart.map(item => ({
-                        name: item.name,
-                        qty: item.qty,
-                        price: item.price,
-                        subtotal: item.subtotal
-                    }));
-                    
-                    // Re-calc change if needed
-                    // paymentInfo.change = Math.max(0, paymentInfo.paid - this.grandTotal);
-
-                    const receipt = buildReceipt({
-                        outlet: {
-                            name: window.outletName,
-                            address: window.outletAddress || ''
-                        },
-                        cashier: window.cashierName,
-                        order: {
-                            ...order,
-                            grand_total: this.grandTotal // ensure consistent
-                        },
-                        items,
-                        payment: paymentInfo
-                    });
-
-                    // printReceipt(receipt);
-
-                    // 🔄 RESET
-                    this.resetOrder();
-                    this.paymentOpen = false;
                 },
 
                 // =====================
@@ -1240,6 +1106,49 @@
                     this.grandTotal = 0;
                     this.paymentOpen = false;
                     this.payAmount = 0;
+                },
+
+                saveOrderMeta() {
+                    if (!this.orderType) {
+                        alert('Tipe Pesanan wajib dipilih');
+                        return;
+                    }
+
+                    if (!this.orderChannel) {
+                        alert('Jenis Order wajib dipilih');
+                        return;
+                    }
+
+                    if (this.orderType === 'dine_in' && !this.tableNumber) {
+                        alert('Nomor meja wajib diisi untuk Dine In');
+                        return;
+                    }
+
+                    this.orderMetaOpen = false;
+                },
+
+                confirmOrderMeta() {
+                    if (!this.orderType) {
+                        alert('Tipe Pesanan wajib dipilih');
+                        return;
+                    }
+
+                    if (!this.orderChannel) {
+                        alert('Jenis Order wajib dipilih');
+                        return;
+                    }
+
+                    if (this.orderType === 'dine_in' && !this.tableNumber) {
+                        alert('Nomor meja wajib diisi untuk Dine In');
+                        return;
+                    }
+
+                    this.orderMetaOpen = false;
+
+                    // baru buka payment
+                    this.payAmount = this.finalTotal();
+                    this.paymentMethod = 'CASH';
+                    this.paymentOpen = true;
                 },
 
                 // =====================

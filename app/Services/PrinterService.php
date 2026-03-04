@@ -34,6 +34,17 @@ class PrinterService extends Controller
         }
     }
 
+    public function checkConnection(): bool
+    {
+        try {
+            $res = Http::timeout(3)->get('http://127.0.0.1:3333/');
+
+            return $res->ok();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
     public function list(){
         $res = Http::get('http://127.0.0.1:3333/printers');
 

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('ingredient_batches', function (Blueprint $table) {
             $table->id();
-            $table->string('code');
+            $table->string('code')->nullable();
             $table->integer('purchase_id')->nullable();
             $table->integer('ingredient_id');
             $table->integer('vendor_id')->nullable();

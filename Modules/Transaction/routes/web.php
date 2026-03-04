@@ -6,6 +6,7 @@ use Modules\Transaction\Http\Controllers\CashierShiftController;
 use Modules\Transaction\Http\Controllers\OrderController;
 use Modules\Transaction\Http\Controllers\ListOrderController;
 use Modules\Transaction\Http\Controllers\KitchenDisplayController;
+use Modules\Transaction\Http\Controllers\RerservationController;
 
 Route::domain('cashier.' .config('app.domain'))->middleware(['auth', 'ensure.business.outlet'])->group(function () {
     Route::get('/', [TransactionController::class, 'index'])->name('transaction');
@@ -20,6 +21,11 @@ Route::domain('cashier.' .config('app.domain'))->middleware(['auth', 'ensure.bus
     Route::prefix('order')->middleware(['ensure.shift.active'])->group(function (){
         Route::get('/', [OrderController::class, 'index'])->name('transaction.order');
         Route::post('/store', [OrderController::class, 'store'])->name('transaction.order.store');
+    });
+
+    Route::prefix('reservation')->middleware(['ensure.shift.active'])->group(function (){
+        Route::get('/', [RerservationController::class, 'index'])->name('transaction.reservation');
+        Route::post('/store', [RerservationController::class, 'store'])->name('transaction.reservation.store');
     });
 
     Route::prefix('list-order')->middleware(['ensure.shift.active'])->group(function (){

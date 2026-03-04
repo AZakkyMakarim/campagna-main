@@ -51,12 +51,12 @@ class OrderController extends Controller
         $taxes = TaxRule::where('business_id', auth()->user()->business_id)->where('is_active', 1)->get();
 
         $printers = Printer::where('role', 'cashier')
-            ->whereHas('outlet', function ($query) {
+            ->whereHas('outlet', function ($query){
                 $query->where('business_id', auth()->user()->business_id);
             })
             ->get();
 
-        return view('transaction::order.index', compact('outlet', 'menus', 'printers', 'taxes', 'categories'));
+        return view('transaction::order.index', compact('outlet','menus', 'printers', 'taxes', 'categories'));
     }
 
     /**
@@ -131,7 +131,7 @@ class OrderController extends Controller
             // =========================
             $paymentType = $request->payment_type; // PAY | DRAFT
             $paymentMode = $request->payment['mode'] ?? null; // FULL | DP
-            $paidAmount = $request->payment['amount'] ?? 0;
+            $paidAmount  = $request->payment['amount'] ?? 0;
 
             $isDraft = $paymentType === 'DRAFT';
 
@@ -145,25 +145,13 @@ class OrderController extends Controller
                     }
                     $orderStatus = 'OPEN';
                     $paymentStatus = 'PAID';
-                } elseif ($paymentMode === 'DP') {
+                } else {
                     // DP
                     if ($paidAmount <= 0) {
                         throw new \Exception('Nominal DP tidak valid');
                     }
                     $orderStatus = 'OPEN';
                     $paymentStatus = 'PARTIAL';
-                } elseif ($paymentMode === 'SPLIT') {
-                    // SPLIT
-                    if ($paidAmount <= 0) {
-                        throw new \Exception('Nominal Split tidak valid');
-                    }
-                    $orderStatus = 'OPEN';
-                    $paymentStatus = 'PARTIAL';
-
-                    // If split payment happens to cover full amount (unlikely for first split but possible)
-                    if ($paidAmount >= $finalTotal) {
-                        $paymentStatus = 'PAID';
-                    }
                 }
             }
 
@@ -173,30 +161,30 @@ class OrderController extends Controller
             $prefixOrder = (clone $settings)->where('name', 'prefix queue')->first();
             $resetTransaction = (clone $settings)->where('name', 'reset transaction')->first();
 
-            if ($resetTransaction == 'harian') {
+            if ($resetTransaction == 'harian'){
                 $orderCount = Order::whereDate('created_at', now())->count();
-            } else {
-                $orderCount = Order::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
+            }else{
+                $orderCount = Order::whereMonth('created_at', now()->month())->whereYear('created_at', now()->year)->count();
             }
 
             $order = Order::create([
-                'business_id' => $user->business_id,
-                'outlet_id' => $outletId,
-                'cashier_id' => $user->id,
-                'customer_name' => $isDraft ? $request->customer_name : null,
-                'customer_phone' => $isDraft ? $request->customer_phone : null,
-                'code' => 'ORD-' . strtoupper(uniqid()),
-                'queue_number' => $prefixOrder->value . str_pad($orderCount, 3, '0', STR_PAD_LEFT),
-                'type' => $request->type,
-                'channel' => $request->channel,
-                'status' => $orderStatus,
-                'payment_status' => $paymentStatus,
-                'sub_total' => $subTotal,
-                'adjustment_total' => $taxTotal + abs($rounding),
-                'grand_total' => $finalTotal,
-                'note' => $request->note,
-                'opened_at' => now(),
-                'closed_at' => $paymentStatus === 'PAID' ? now() : null,
+                'business_id'       => $user->business_id,
+                'outlet_id'         => $outletId,
+                'cashier_id'        => $user->id,
+                'customer_name'     => $isDraft ? $request->customer_name : null,
+                'customer_phone'    => $isDraft ? $request->customer_phone : null,
+                'code'              => 'ORD-' . strtoupper(uniqid()),
+                'queue_number'      => $prefixOrder->value . str_pad($orderCount, 3, '0', STR_PAD_LEFT),
+                'type'              => $request->type,
+                'channel'           => $request->channel,
+                'status'            => $orderStatus,
+                'payment_status'    => $paymentStatus,
+                'sub_total'         => $subTotal,
+                'adjustment_total'  => $taxTotal + abs($rounding),
+                'grand_total'       => $finalTotal,
+                'note'              => $request->note,
+                'opened_at'         => now(),
+                'closed_at'         => $paymentStatus === 'PAID' ? now() : null,
             ]);
 
             // =========================
@@ -204,13 +192,13 @@ class OrderController extends Controller
             // =========================
             foreach ($request->items as $item) {
                 OrderItem::create([
-                    'order_id' => $order->id,
-                    'menu_id' => $item['menu_id'],
+                    'order_id'      => $order->id,
+                    'menu_id'       => $item['menu_id'],
                     'name_snapshot' => $menus[$item['menu_id']]->name,
-                    'qty' => $item['qty'],
-                    'price' => $menus[$item['menu_id']]->sell_price,
-                    'subtotal' => $menus[$item['menu_id']]->sell_price * $item['qty'],
-                    'note' => $item['note'] ?? null,
+                    'qty'           => $item['qty'],
+                    'price'         => $menus[$item['menu_id']]->sell_price,
+                    'subtotal'      => $menus[$item['menu_id']]->sell_price * $item['qty'],
+                    'note'          => $item['note'] ?? null,
                 ]);
             }
 
@@ -220,11 +208,11 @@ class OrderController extends Controller
             foreach ($taxes as $tax) {
                 OrderAdjustment::create([
                     'order_id' => $order->id,
-                    'type' => 'TAX',
-                    'name' => $tax->name,
-                    'method' => $tax->calculation_type,
-                    'value' => $tax->value,
-                    'amount' => $tax->calculation_type === 'percent'
+                    'type'     => 'TAX',
+                    'name'     => $tax->name,
+                    'method'   => $tax->calculation_type,
+                    'value'    => $tax->value,
+                    'amount'   => $tax->calculation_type === 'percent'
                         ? $subTotal * $tax->value / 100
                         : $tax->value,
                     'is_addition' => true,
@@ -234,11 +222,11 @@ class OrderController extends Controller
             if ($rounding != 0) {
                 OrderAdjustment::create([
                     'order_id' => $order->id,
-                    'type' => 'ROUNDING',
-                    'name' => 'Pembulatan',
-                    'method' => 'AUTO',
-                    'value' => 0,
-                    'amount' => abs($rounding),
+                    'type'     => 'ROUNDING',
+                    'name'     => 'Pembulatan',
+                    'method'   => 'AUTO',
+                    'value'    => 0,
+                    'amount'   => abs($rounding),
                     'is_addition' => $rounding > 0,
                 ]);
             }
@@ -247,23 +235,24 @@ class OrderController extends Controller
             // PAYMENT
             // =========================
             if ($paymentType === 'PAY') {
-                //                $this->consumeStockFromOrder($order);
+//                $this->consumeStockFromOrder($order);
 
                 Payment::create([
-                    'order_id' => $order->id,
-                    'cashier_id' => $user->id,
-                    'method' => $request->payment['method'],
-                    'amount' => $paidAmount,
-                    'paid_at' => now(),
+                    'payable_type'  => Order::class,
+                    'payable_id'    => $order->id,
+                    'cashier_id'    => auth()->id(),
+                    'type'          => 'ORDER',
+                    'method'        => $request->payment['method'],
+                    'amount'        => $paidAmount,
+                    'paid_at'       => now(),
                 ]);
             }
-
-            $this->printOrderKitchenV2($order);
 
             DB::commit();
 
             broadcast(new OrderCreated($order->load('items')));
 
+            $this->printOrderKitchenV2($order);
             return response()->json([
                 'success' => true,
                 'order' => $order->load('items'),
@@ -277,36 +266,6 @@ class OrderController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
-    {
-        return view('transaction::show');
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        return view('transaction::edit');
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id)
-    {
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
-    {
     }
 
     protected function consumeStockFromOrder(Order $order)
@@ -331,8 +290,7 @@ class OrderController extends Controller
 
         foreach ($menu->components as $component) {
             $target = $component->componentable;
-            if (!$target)
-                continue;
+            if (!$target) continue;
 
             $needQty = $component->qty * $orderQty;
 
@@ -351,8 +309,7 @@ class OrderController extends Controller
         $recipe->loadMissing('items.ingredient');
 
         foreach ($recipe->items as $item) {
-            if (!$item->ingredient)
-                continue;
+            if (!$item->ingredient) continue;
 
             $needQty = $item->quantity * $orderQty;
 
@@ -381,8 +338,7 @@ class OrderController extends Controller
         // StockMovement::create([...]);
     }
 
-    private function printOrderKitchen($order)
-    {
+    private function printOrderKitchen($order){
         $printers = Printer::where('outlet_id', active_outlet_id())->where('role', 'kitchen')->get();
 
         foreach ($printers as $printer) {
@@ -447,18 +403,17 @@ class OrderController extends Controller
         }
     }
 
-    private function printOrderKitchenV2($order)
-    {
+    private function printOrderKitchenV2($order){
         $servicePrinter = new PrinterService();
         $printers = Printer::where('outlet_id', active_outlet_id())->where('is_active', 1)->get();
 
         foreach ($printers as $printer) {
             $data = [
-                'role' => $printer->role,
-                'printer_connection_type' => $printer->connection_type,
-                'printer_ip' => $printer->ip_address,
-                'printer_port' => $printer->port,
-                'order' => $order,
+                'role'                      => $printer->role,
+                'printer_connection_type'   => $printer->connection_type,
+                'printer_ip'                => $printer->ip_address,
+                'printer_port'              => $printer->port,
+                'order'                     => $order,
             ];
 
             $servicePrinter->print($data);

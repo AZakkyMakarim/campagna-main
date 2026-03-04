@@ -9,7 +9,13 @@
     <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-gray-800">Menu</h2>
 
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center gap-2">
+            <button
+                @click="$dispatch('open-modal', 'modal-import-menu-bundle')"
+                class="bg-green-600 text-white px-4 py-2 rounded-xl shadow hover:bg-green-500 transition flex items-center gap-2 hover:cursor-pointer">
+                <i class="fa fa-file-import"></i>
+                Import
+            </button>
             <button
                 @click="$dispatch('open-modal', 'modal-form-bundle')"
                 class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
@@ -78,6 +84,72 @@
         </table>
     </div>
 @endsection
+
+<x-modal id="modal-import-menu-bundle" title="Import Paket" size="md">
+    <form method="POST" action="{{ route('management.purchasing.menu.bundle.import') }}" enctype="multipart/form-data">
+        @csrf
+        <div class="p-6">
+            <div class="space-y-6">
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="fa fa-info-circle text-blue-600 mt-0.5"></i>
+                        <div class="text-sm text-blue-800">
+                            <p class="font-semibold mb-1">Panduan Import:</p>
+                            <ul class="list-disc list-inside space-y-1 text-blue-700">
+                                <li>Gunakan format <b>.xlsx</b> atau <b>.csv</b></li>
+                                <li>Kolom wajib: <span class="font-medium bg-blue-100 px-1 rounded">Nama Paket</span>, <span class="font-medium bg-blue-100 px-1 rounded">SKU</span>, <span class="font-medium bg-blue-100 px-1 rounded">Kategori</span>, <span class="font-medium bg-blue-100 px-1 rounded">Harga Jual</span>, <span class="font-medium bg-blue-100 px-1 rounded">Nama Menu</span>, <span class="font-medium bg-blue-100 px-1 rounded">Qty</span></li>
+                                <li>Satu paket bisa punya <b>banyak baris</b> menu</li>
+                                <li><b>Nama Menu</b> harus sudah ada di daftar Menu Single</li>
+                                <li>Import akan <b>update</b> paket jika SKU sudah ada</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Step 1: Download Template</label>
+                    <a href="{{ route('management.purchasing.menu.bundle.download-template') }}" target="_blank"
+                        class="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50 transition cursor-pointer group">
+                        <i class="fa fa-file-excel text-green-600 text-lg group-hover:scale-110 transition"></i>
+                        <span class="font-medium">Download Format.xlsx</span>
+                    </a>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Step 2: Upload File</label>
+                    <input
+                        type="file"
+                        name="file"
+                        required
+                        accept=".csv, .xlsx, .xls"
+                        class="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2.5 file:px-4
+                            file:rounded-lg file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-orange-50 file:text-orange-700
+                            hover:file:bg-orange-100
+                            cursor-pointer border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-xl">
+            <button
+                type="button"
+                @click="$dispatch('close-modal')"
+                class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition">
+                Batal
+            </button>
+            <button
+                type="submit"
+                class="px-5 py-2.5 bg-orange-600 text-white rounded-xl font-medium hover:bg-orange-700 shadow-lg shadow-orange-200 transition">
+                <i class="fa fa-upload mr-2"></i>
+                Mulai Import
+            </button>
+        </div>
+    </form>
+</x-modal>
 
 <x-modal id="modal-form-bundle" title="Tambah Paket" icon="fa-plus" size="7xl">
     <form method="POST"

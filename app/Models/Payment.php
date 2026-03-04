@@ -7,16 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 class Payment extends Model
 {
     protected $fillable = [
-        'order_id',
+        'payable_type',
+        'payable_id',
         'cashier_id',
+        'type',
         'method',
         'amount',
         'paid_at',
         'reference',
     ];
 
-    public function order()
+    public function payable()
     {
-        return $this->belongsTo(Order::class);
+        return $this->morphTo();
     }
 }

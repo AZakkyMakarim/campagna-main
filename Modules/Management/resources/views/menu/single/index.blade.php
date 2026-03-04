@@ -9,7 +9,13 @@
     <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-gray-800">Menu</h2>
 
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center gap-2">
+            <button
+                @click="$dispatch('open-modal', 'modal-import-menu-single')"
+                class="bg-green-600 text-white px-4 py-2 rounded-xl shadow hover:bg-green-500 transition flex items-center gap-2 hover:cursor-pointer">
+                <i class="fa fa-file-import"></i>
+                Import
+            </button>
             <button
                 @click="$dispatch('open-modal', 'modal-form-single')"
                 class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
@@ -81,9 +87,74 @@
     </div>
 @endsection
 
+<x-modal id="modal-import-menu-single" title="Import Menu" size="md">
+    <form method="POST" action="{{ route('management.purchasing.menu.single.import') }}" enctype="multipart/form-data">
+        @csrf
+        <div class="p-6">
+            <div class="space-y-6">
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="fa fa-info-circle text-blue-600 mt-0.5"></i>
+                        <div class="text-sm text-blue-800">
+                            <p class="font-semibold mb-1">Panduan Import:</p>
+                            <ul class="list-disc list-inside space-y-1 text-blue-700">
+                                <li>Gunakan format <b>.xlsx</b> atau <b>.csv</b></li>
+                                <li>Kolom wajib: <span class="font-medium bg-blue-100 px-1 rounded">Nama Menu</span>, <span class="font-medium bg-blue-100 px-1 rounded">SKU</span>, <span class="font-medium bg-blue-100 px-1 rounded">Kategori</span>, <span class="font-medium bg-blue-100 px-1 rounded">Harga Jual</span>, <span class="font-medium bg-blue-100 px-1 rounded">Nama Bahan</span>, <span class="font-medium bg-blue-100 px-1 rounded">Qty</span></li>
+                                <li>Satu menu bisa <b>banyak baris</b> (banyak komponen)</li>
+                                <li>Import akan <b>update</b> menu jika SKU sudah ada</li>
+                                <li>Kategori: <b>makanan</b> atau <b>minuman</b></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Step 1: Download Template</label>
+                    <a href="{{ route('management.purchasing.menu.single.download-template') }}" target="_blank"
+                        class="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50 transition cursor-pointer group">
+                        <i class="fa fa-file-excel text-green-600 text-lg group-hover:scale-110 transition"></i>
+                        <span class="font-medium">Download Format.xlsx</span>
+                    </a>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Step 2: Upload File</label>
+                    <input
+                        type="file"
+                        name="file"
+                        required
+                        accept=".csv, .xlsx, .xls"
+                        class="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2.5 file:px-4
+                            file:rounded-lg file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-orange-50 file:text-orange-700
+                            hover:file:bg-orange-100
+                            cursor-pointer border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-xl">
+            <button
+                type="button"
+                @click="$dispatch('close-modal')"
+                class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition">
+                Batal
+            </button>
+            <button
+                type="submit"
+                class="px-5 py-2.5 bg-orange-600 text-white rounded-xl font-medium hover:bg-orange-700 shadow-lg shadow-orange-200 transition">
+                <i class="fa fa-upload mr-2"></i>
+                Mulai Import
+            </button>
+        </div>
+    </form>
+</x-modal>
 <x-modal id="modal-form-single" title="Tambah Menu" icon="fa-plus" size="7xl">
     <form method="POST" action="{{ route('management.purchasing.menu.single.store') }}"
-          x-data="menuForm(@js($recipes))"
+          x-data="menuForm(@js($ingredients))"
     >
         @csrf
 
@@ -233,7 +304,7 @@
 </x-modal>
 
 <div
-    x-data="menuEditForm(@js($recipes))"
+    x-data="menuEditForm(@js($ingredients))"
     x-show="open"
     @open-edit-menu.window="fill($event.detail)"
     x-transition
@@ -253,7 +324,7 @@
         <form
             method="POST"
             :action="action"
-            x-data="menuForm(@js($recipes))"
+            x-data="menuForm(@js($ingredients))"
             @open-edit-menu.window="fill($event.detail)"
         >
             @csrf
@@ -445,13 +516,16 @@
                 id: r.id,
                 name: r.name,
 
-                unit: r.unit
+                unit: r.base_unit
                     ? {
-                        id: r.unit.id,
-                        name: r.unit.name,
-                        symbol: r.unit.symbol,
+                        id: r.base_unit.id,
+                        name: r.base_unit.name,
+                        symbol: r.base_unit.symbol,
                     }
                     : null,
+
+                stock: Number(r.stock?.qty || 0),
+                avg_cost: Number(r.stock?.avg_cost || 0),
 
                 quantity: Number(r.quantity || 1),
 
@@ -459,8 +533,11 @@
                     ingredient_id: it.ingredient_id,
                     name: it.ingredient?.name ?? '-',
                     qty: Number(it.quantity || 0),
-                    avg_cost: Number(it.ingredient?.avg_cost || 0),
-                    stock: Number(it.ingredient?.total_stock || 0),
+
+                    // 🔥 sekarang ambil dari stock snapshot
+                    avg_cost: Number(it.ingredient?.stock?.avg_cost || 0),
+                    stock: Number(it.ingredient?.stock?.qty || 0),
+
                     unit: it.unit
                         ? {
                             id: it.unit.id,
@@ -508,20 +585,31 @@
 
                     row.ingredient = picked || null;
 
-                    if (!picked || !picked.items.length) {
+                    if (!picked) {
                         row.unit_cost = 0;
                         this.recalc();
                         return;
                     }
 
+                    // 🔥 kalau tidak punya komponen (bukan semi / bukan resep)
+                    if (!picked.items || !picked.items.length) {
+                        row.unit_cost = Number(picked.avg_cost || picked.stock?.avg_cost || 0);
+                        this.recalc();
+                        return;
+                    }
+
+                    // 🔥 hitung total cost dari komponen
                     let totalRecipeCost = 0;
 
                     picked.items.forEach(it => {
-                        totalRecipeCost += it.qty * it.avg_cost;
+                        const avgCost = Number(it.ingredient?.stock?.avg_cost || 0);
+                        const qty = Number(it.qty || 0);
+
+                        totalRecipeCost += qty * avgCost;
                     });
 
                     row.unit_cost = picked.quantity > 0
-                        ? totalRecipeCost / picked.quantity
+                        ? totalRecipeCost / Number(picked.quantity)
                         : 0;
 
                     this.recalc();

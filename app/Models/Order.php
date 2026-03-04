@@ -10,6 +10,7 @@ class Order extends Model
         'business_id',
         'outlet_id',
         'cashier_id',
+        'reservation_id',
         'customer_name',
         'customer_phone',
         'code',
@@ -34,6 +35,10 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function reservation() {
+        return $this->belongsTo(Reservation::class);
+    }
+
     public function items(){
         return $this->hasMany(OrderItem::class, 'order_id');
     }
@@ -43,9 +48,8 @@ class Order extends Model
         return $this->hasMany(OrderAdjustment::class);
     }
 
-    public function payments()
-    {
-        return $this->hasMany(Payment::class);
+    public function payments(){
+        return $this->morphMany(Payment::class, 'payable');
     }
 
     public function getPaidAmountAttribute()

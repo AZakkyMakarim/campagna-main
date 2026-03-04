@@ -2,6 +2,7 @@
 
 namespace Modules\Management\Http\Controllers;
 
+use App\Exports\IngredientTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Models\Ingredient;
 use App\Models\Outlet;
@@ -10,6 +11,7 @@ use App\Models\RecipeItem;
 use App\Models\Unit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 
 class IngredientController extends Controller
 {
@@ -106,9 +108,6 @@ class IngredientController extends Controller
         $file = $request->file('file');
         $path = $file->getRealPath();
 
-        // If it's an uploaded file, we might need to move it or just read it.
-        // getRealPath() should work for temporary files.
-
         $businessId = Auth::user()->business_id;
         $outletId = active_outlet_id();
 
@@ -123,12 +122,17 @@ class IngredientController extends Controller
                     toast("Import gagal: $firstError", 'error');
                 }
             } else {
-                toast("Import berhasil! " . $result['success'] . " bahan ditambahkan/ciperbarui.", 'success');
+                toast("Import berhasil! " . $result['success'] . " bahan ditambahkan/diperbarui.", 'success');
             }
         } catch (\Exception $e) {
             toast("Terjadi kesalahan sistem: " . $e->getMessage(), 'error');
         }
 
         return back();
+    }
+
+    public function downloadTemplate()
+    {
+        return Excel::download(new IngredientTemplateExport, 'template_import_bahan.xlsx');
     }
 }

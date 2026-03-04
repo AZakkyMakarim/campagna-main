@@ -70,7 +70,7 @@ class TransactionController extends Controller
         // === PAYMENT METHODS ===
         $paymentMethods = Payment::select('method', DB::raw('SUM(amount) as total'))
             ->whereDate('paid_at', $today)   // atau created_at, tergantung lu simpan di mana
-            ->whereHas('order', function ($q) {
+            ->whereHasMorph('payable', Order::class, function ($q) {
                 $q->where('status', 'PAID');  // pastiin ordernya valid
             })
             ->groupBy('method')

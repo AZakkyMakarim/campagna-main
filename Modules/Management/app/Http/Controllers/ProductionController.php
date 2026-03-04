@@ -7,6 +7,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientBatch;
 use App\Models\Recipe;
 use App\Models\StockMovement;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -24,13 +25,8 @@ class ProductionController extends Controller
                 'baseUnit',
                 'recipe.items.ingredient.batches',
                 'recipe.items.unit',
-                'recipe.items.ingredient' => function ($q) {
-                    $q->withSum('batches as total_stock', 'qty_remaining')
-                        ->withAvg('batches as avg_cost', 'cost_per_unit');
-                },
+                'recipe.items.ingredient.stock',
             ])
-            ->withSum('batches as total_stock', 'qty_remaining')
-            ->withAvg('batches as avg_cost', 'cost_per_unit')
             ->where('type', 'semi')
             ->whereHas('recipe')
             ->get();
@@ -49,14 +45,30 @@ class ProductionController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request) {
-        DB::beginTransaction();
-        try {
-            $totalCost = 0;
-            $recipe = Ingredient::find($request->ingredient_id)->recipe;
+    public function store(Request $request)
+    {
+        $stockService = new StockService();
 
+        DB::beginTransaction();
+
+        try {
+            $recipeIngredient = Ingredient::findOrFail($request->ingredient_id);
+            $recipe = $recipeIngredient->recipe;
+
+            // 1️⃣ VALIDASI: cek stok cukup dulu
             foreach (json_decode($request->components) as $item) {
-                $totalCost += $this->consumeFifo(
+                $stockService->assertStockEnough(
+                    $item->ingredient_id,
+                    active_outlet_id(),
+                    $item->qty
+                );
+            }
+
+            $totalCost = 0;
+
+            // 2️⃣ CONSUME FIFO
+            foreach (json_decode($request->components) as $item) {
+                $totalCost += $stockService->consumeFifo(
                     $item->ingredient_id,
                     $item->qty,
                     active_outlet_id(),
@@ -65,12 +77,14 @@ class ProductionController extends Controller
                 );
             }
 
+            // 3️⃣ HITUNG HASIL PRODUKSI
             $producedQty = $request->production_qty * $recipe->quantity;
 
             $costPerUnit = $producedQty > 0
                 ? $totalCost / $producedQty
                 : 0;
 
+            // 4️⃣ BUAT BATCH BARU (HASIL PRODUKSI)
             $batch = IngredientBatch::create([
                 'outlet_id'     => active_outlet_id(),
                 'ingredient_id' => $recipe->ingredient_id,
@@ -81,26 +95,33 @@ class ProductionController extends Controller
                 'received_at'   => now(),
             ]);
 
-            StockMovement::create([
+            // 5️⃣ CATAT STOCK MOVEMENT (IN)
+            $stockService->applyMovement([
                 'movementable_type' => Recipe::class,
                 'movementable_id'   => $recipe->id,
                 'business_id'       => auth()->user()->business_id,
                 'ingredient_id'     => $recipe->ingredient_id,
                 'batch_id'          => $batch->id,
                 'outlet_id'         => active_outlet_id(),
-                'code'              => uniqid('PRO-', false),
+                'code'              => uniqid('PRO-'),
                 'type'              => 'IN',
                 'qty'               => $producedQty,
                 'cost_per_unit'     => $costPerUnit,
-                'user_id'           => Auth::user()->id,
+                'user_id'           => auth()->id(),
             ]);
 
+            // 6️⃣ UPDATE SNAPSHOT STOCK (+)
+            $stockService->increaseStock(
+                ingredientId: $recipe->ingredient_id,
+                outletId: active_outlet_id(),
+                qty: $producedQty
+            );
 
-            toast('Resep berhasil berhasil diproduksi!');
             DB::commit();
-        }catch (\Exception $exception){
-            toast($exception->getMessage(), 'warning');
+            toast('Resep berhasil diproduksi!');
+        } catch (\Throwable $e) {
             DB::rollBack();
+            toast($e->getMessage(), 'warning');
         }
 
         return back();

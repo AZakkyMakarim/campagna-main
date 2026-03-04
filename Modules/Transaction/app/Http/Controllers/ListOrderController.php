@@ -78,11 +78,13 @@ class ListOrderController extends Controller
             }
 
             Payment::create([
-                'order_id'   => $order->id,
-                'cashier_id' => auth()->id(),
-                'method'     => $request->method,
-                'amount'     => $request->amount,
-                'paid_at'    => now(),
+                'payable_type'  => Order::class,
+                'payable_id'    => $order->id,
+                'cashier_id'    => auth()->id(),
+                'type'          => 'ORDER',
+                'method'        => $request->method,
+                'amount'        => $request->amount,
+                'paid_at'       => now(),
             ]);
 
             $newTotalPaid = $totalPaid + $request->amount;

@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Imports\IngredientImport;
 use App\Models\Ingredient;
 use App\Models\Unit;
-use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 class IngredientImportService
 {
@@ -20,170 +20,90 @@ class IngredientImportService
      */
     public function import(string $filePath, int $businessId, int $outletId): array
     {
-        if (!file_exists($filePath)) {
-            return ['success' => 0, 'errors' => 1, 'messages' => ["File not found: $filePath"]];
-        }
-
-        $handle = fopen($filePath, 'r');
-        if ($handle === false) {
-            return ['success' => 0, 'errors' => 1, 'messages' => ["Could not open file: $filePath"]];
-        }
-
-        // Headers
-        // Expected: No, Nama Bahan, Tipe, Satuan, Stok Minimum
-        $headers = fgetcsv($handle);
-
-        if (!$headers) {
-            fclose($handle);
-            return ['success' => 0, 'errors' => 1, 'messages' => ["Empty CSV file."]];
-        }
-
-        // Normalize headers to lowercase and trim
-        $headers = array_map(function ($h) {
-            return strtolower(trim($h));
-        }, $headers);
-
-        // Map expected headers to internal keys
-        $headerMap = [
-            'nama bahan' => 'name',
-            'tipe' => 'type',
-            'satuan' => 'base_unit',
-            'stok minimum' => 'min_stock',
-        ];
-
-        // Validate basic headers exist
-        $missingHeaders = [];
-        foreach ($headerMap as $csvHeader => $key) {
-            if (!in_array($csvHeader, $headers)) {
-                $missingHeaders[] = $csvHeader;
-            }
-        }
-
-        if (!empty($missingHeaders)) {
-            // Fallback to English headers if Indonesian ones are missing, strictly for backward compatibility or if the user used the old format
-            $fallbackMap = [
-                'name' => 'name',
-                'type' => 'type',
-                'base_unit' => 'base_unit',
-                'min_stock' => 'min_stock',
-            ];
-
-            $useFallback = true;
-            foreach ($fallbackMap as $csvHeader => $key) {
-                if (!in_array($csvHeader, $headers)) {
-                    $useFallback = false;
-                    break;
-                }
+        // Use Maatwebsite Excel to import to collection
+        try {
+            // Check if file exists
+            if (!file_exists($filePath)) {
+                return ['success' => 0, 'errors' => 1, 'messages' => ["File not found."]];
             }
 
-            if (!$useFallback) {
-                fclose($handle);
-                return ['success' => 0, 'errors' => 1, 'messages' => ["Missing required headers: " . implode(', ', $missingHeaders)]];
-            }
-            // Should verify this logic, but for now assuming if fallback works we use it. 
-            // Actually, let's stick to the user request. They provided specific headers.
-            // If the user's file has "Nama Bahan", match to 'name'.
+            $import = new IngredientImport();
+            // Store the imported data into the import object
+            Excel::import($import, $filePath);
+
+            $rows = $import->getRows();
+        } catch (\Exception $e) {
+            return ['success' => 0, 'errors' => 1, 'messages' => ["Error reading file: " . $e->getMessage()]];
         }
 
-        $row = 1; // Header is row 1
         $success = 0;
         $errors = 0;
         $errorMessages = [];
+        $rowNumber = 1; // Header is 1, data starts at 2
 
-        DB::beginTransaction();
+        foreach ($rows as $row) {
+            $rowNumber++;
 
-        try {
-            while (($data = fgetcsv($handle)) !== false) {
-                $row++;
+            // Keys are slugged by the library (e.g. "Nama Bahan" -> "nama_bahan")
 
-                // Map data to headers
-                if (count($headers) != count($data)) {
-                    $errorMessages[] = "Row $row: Column count mismatch. Expected " . count($headers) . ", got " . count($data) . ". Skipping.";
-                    $errors++;
-                    continue;
-                }
+            // Map keys
+            $name = $row['nama_bahan'] ?? $row['name'] ?? null;
+            $type = $row['tipe_rawsemifinished'] ?? $row['tipe'] ?? $row['type'] ?? null;
+            $unitName = $row['satuan'] ?? $row['base_unit'] ?? null;
+            $minStock = $row['stok_minimum'] ?? $row['min_stock'] ?? 0;
 
-                $rowPayload = array_combine($headers, $data);
-
-                // Extract using map
-                $name = $this->getValue($rowPayload, ['nama bahan', 'name']);
-                $type = $this->getValue($rowPayload, ['tipe', 'type']); // raw, semi, finished
-                $unitName = $this->getValue($rowPayload, ['satuan', 'base_unit', 'unit']);
-                $minStock = $this->getValue($rowPayload, ['stok minimum', 'min_stock']) ?? 0;
-
-                // Optional
-                $sellable = $this->getValue($rowPayload, ['sellable', 'dijual']) ?? 0;
-
-                if (!$name || !$type || !$unitName) {
-                    $errorMessages[] = "Row $row: Missing required fields (Nama Bahan, Tipe, Satuan). Skipping.";
-                    $errors++;
-                    continue;
-                }
-
-                // Trim inputs
-                $name = trim($name);
-                $type = strtolower(trim($type));
-                $unitName = trim($unitName);
-
-                // Validate Type
-                if (!in_array($type, ['raw', 'semi', 'finished'])) {
-                    $errorMessages[] = "Row $row: Invalid type '$type'. Must be raw, semi, or finished. Skipping.";
-                    $errors++;
-                    continue;
-                }
-
-                // Find Unit
-                $unit = Unit::where('name', 'like', $unitName)
-                    ->orWhere('symbol', 'like', $unitName)
-                    ->first();
-
-                if (!$unit) {
-                    // Start: Attempt to create unit if really needed, or just error?
-                    // For now, let's error to be safe, or default to something?
-                    // Task says "Satuan" is dropdown in the image, so it implies existing units.
-                    $errorMessages[] = "Row $row: Unit '$unitName' not found. Skipping.";
-                    $errors++;
-                    continue;
-                }
-
-                // FirstOrNew to check if exists
-                $ingredient = Ingredient::firstOrNew([
-                    'business_id' => $businessId,
-                    'outlet_id' => $outletId,
-                    'name' => $name,
-                ]);
-
-                // Set code only if new
-                if (!$ingredient->exists) {
-                    $ingredient->code = uniqid();
-                }
-
-                $ingredient->type = $type;
-                $ingredient->base_unit_id = $unit->id;
-                $ingredient->min_stock = (float) $minStock;
-                // Parse boolean/int for sellable. If type is finished, it's likely sellable but not always.
-                // Default sellable to 0 unless specified or logic dictates.
-                // In the image, 'finished' items are like 'PISANG GORENG MADU', which are sold.
-                // 'raw' items are ingredients.
-
-                // Let's trust the input or default
-                $ingredient->is_sellable = filter_var($sellable, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
-
-                // Force finished goods to be sellable if not specified? 
-                // Let's keep it simple for now.
-
-                $ingredient->save();
-
-                $success++;
+            if (!$name || !$type || !$unitName) {
+                $errorMessages[] = "Row $rowNumber: Missing required fields (Nama Bahan, Tipe, Satuan). Skipping.";
+                $errors++;
+                continue;
             }
 
-            DB::commit();
-            fclose($handle);
+            // Trim inputs
+            $name = trim($name);
+            $type = strtolower(trim($type));
+            $unitName = trim($unitName);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-            fclose($handle);
-            throw $e;
+            // Validate Type
+            if (!in_array($type, ['raw', 'semi', 'finished'])) {
+                $errorMessages[] = "Row $rowNumber: Invalid type '$type'. Must be raw, semi, or finished. Skipping.";
+                $errors++;
+                continue;
+            }
+
+            // Find Unit
+            $unit = Unit::where('name', 'like', $unitName)
+                ->orWhere('symbol', 'like', $unitName)
+                ->first();
+
+            if (!$unit) {
+                $errorMessages[] = "Row $rowNumber: Unit '$unitName' not found. Skipping.";
+                $errors++;
+                continue;
+            }
+
+            // FirstOrNew to check if exists
+            $ingredient = Ingredient::firstOrNew([
+                'business_id' => $businessId,
+                'outlet_id' => $outletId,
+                'name' => $name,
+            ]);
+
+            // Set code only if new
+            if (!$ingredient->exists) {
+                $ingredient->code = uniqid();
+            }
+
+            $ingredient->type = $type;
+            $ingredient->base_unit_id = $unit->id;
+            $ingredient->min_stock = (float) $minStock;
+
+            try {
+                $ingredient->save();
+                $success++;
+            } catch (\Exception $e) {
+                $errorMessages[] = "Row $rowNumber: Error saving '$name' - " . $e->getMessage();
+                $errors++;
+            }
         }
 
         return [
@@ -191,15 +111,5 @@ class IngredientImportService
             'errors' => $errors,
             'messages' => $errorMessages
         ];
-    }
-
-    private function getValue(array $row, array $keys)
-    {
-        foreach ($keys as $key) {
-            if (isset($row[$key])) {
-                return $row[$key];
-            }
-        }
-        return null;
     }
 }

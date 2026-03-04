@@ -20,7 +20,7 @@ class Ingredient extends Model
         'is_unlimited_stock'
     ];
 
-    protected $appends = ['recipe_components', 'total_stock'];
+    protected $appends = ['recipe_components'];
 
     public function business(){
         return $this->belongsTo(BusinessProfile::class, 'business_id');
@@ -28,6 +28,12 @@ class Ingredient extends Model
 
     public function outlet(){
         return $this->belongsTo(Outlet::class, 'outlet_id');
+    }
+
+    public function stock()
+    {
+        return $this->hasOne(IngredientStock::class)
+            ->where('outlet_id', active_outlet_id());
     }
 
     public function baseUnit(){
@@ -79,10 +85,5 @@ class Ingredient extends Model
             'unit_id' => $item->unit_id,
             'unit_name' => $item->unit->name,
         ]);
-    }
-
-    public function getTotalStockAttribute()
-    {
-        return $this->batches()->sum('qty_remaining');
     }
 }

@@ -9,7 +9,15 @@
 <div x-data="{ tab: 'menu' }">
     <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-gray-800">Resep</h2>
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center gap-2">
+
+            <button
+                @click="$dispatch('open-modal', 'modal-import-semi')"
+                x-show="tab === 'semi'"
+                class="bg-green-600 text-white px-4 py-2 rounded-xl shadow hover:bg-green-500 transition flex items-center gap-2 hover:cursor-pointer">
+                <i class="fa fa-file-import"></i>
+                Import
+            </button>
 
             <div x-show="tab === 'menu'">
                 <div class="flex items-center space-x-3">

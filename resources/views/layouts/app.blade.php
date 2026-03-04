@@ -12,8 +12,12 @@
 <body class="bg-gray-50 text-gray-900">
 
 <div x-data="{ activeModule: '{{ @$activeModule }}', activeMenu: '{{ @$activeMenu }}', activeSubmenu: '{{ @$activeSubmenu }}' }" class="min-h-screen flex flex-col bg-background">
-    <div class="flex flex-1 overflow-hidden">
-        <aside x-show="activeModule" x-transition class="w-64 p-4 border-r border-gray-300 bg-white flex flex-col">
+    <div class="flex flex-1 overflow-hidden" x-data="{ sidebarOpen: true }">
+        <aside
+            x-show="sidebarOpen && activeModule"
+            x-transition
+            class="w-64 p-4 border-r border-gray-300 bg-white flex flex-col"
+        >
             <div class="flex-1 overflow-y-auto">
                 <template x-if="activeModule === 'core'">
                     <div class="flex flex-col space-y-2">
@@ -312,6 +316,16 @@
                         </div>
 
                         <div class="space-y-2 mt-4">
+                            <a href="{{ route('transaction.reservation') }}"
+                               @click="activeMenu = 'reservation'"
+                               :class="activeMenu === 'reservation' ? 'bg-orange-600 text-white font-medium' : 'hover:text-white hover:bg-orange-500'"
+                               class="flex items-center gap-2 px-3 py-2 rounded-xl">
+                                <i class="fa fa-calendar-plus"></i>
+                                <span>Reservasi</span>
+                            </a>
+                        </div>
+
+                        <div class="space-y-2 mt-4">
                             <a href="{{ route('transaction.shift') }}"
                                @click="activeMenu = 'shift'"
                                :class="activeMenu === 'shift' ? 'bg-orange-600 text-white font-medium' : 'hover:text-white hover:bg-orange-500'"
@@ -340,11 +354,22 @@
             @endif
         </aside>
 
-        <main class="flex-1 text-gray-900 overflow-y-auto">
+        <main
+            class="flex-1 text-gray-900 overflow-y-auto transition-all"
+            :class="sidebarOpen ? 'ml-0' : 'ml-0'"
+        >
             <header class="h-16 px-6 shadow-md flex items-center bg-white">
                 <div class="flex items-center justify-between w-full">
                     <!-- LEFT -->
                     <div class="flex items-center gap-3">
+                        <button
+                            @click="sidebarOpen = !sidebarOpen"
+                            class="p-2 rounded-lg hover:bg-gray-100 transition"
+                            title="Toggle Menu"
+                        >
+                            <i class="fa fa-bars text-xl"></i>
+                        </button>
+
                         <h1 class="text-2xl font-bold text-gray-900 font-serif leading-none">
                             {{ @Auth::user()->businessProfile->name ?? 'Business Profile' }}
                         </h1>
@@ -405,7 +430,6 @@
                 @yield('content')
             </div>
         </main>
-
     </div>
 
     {{-- Footer --}}
