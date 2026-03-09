@@ -90,6 +90,7 @@ class MenuSingleImportService
 
                 foreach ($components as $row) {
                     $namaBahan = trim($row['nama_bahan'] ?? $row['nama bahan'] ?? '');
+                    $tipeBahanRaw = trim($row['tipe_bahan'] ?? $row['tipe bahan'] ?? $row['tipe'] ?? '');
                     $qty = (float) ($row['qty'] ?? $row['jumlah'] ?? 0);
 
                     if (empty($namaBahan)) {
@@ -98,13 +99,25 @@ class MenuSingleImportService
                         continue;
                     }
 
+                    if (empty($tipeBahanRaw)) {
+                        $errors++;
+                        $messages[] = "Menu '{$namaMenu}': Baris bahan '{$namaBahan}' tidak memiliki tipe bahan.";
+                        continue;
+                    }
+
+                    $tipeBahan = strtolower($tipeBahanRaw);
+                    if (in_array($tipeBahan, ['bahan baku', 'baku', 'raw'])) $tipeBahan = 'raw';
+                    elseif (in_array($tipeBahan, ['bahan 1/2 jadi', 'bahan setengah jadi', 'setengah jadi', 'semi'])) $tipeBahan = 'semi';
+                    elseif (in_array($tipeBahan, ['bahan jadi', 'jadi', 'finished'])) $tipeBahan = 'finished';
+
                     $ingredient = Ingredient::where('outlet_id', $outletId)
                         ->whereRaw('LOWER(name) = ?', [strtolower($namaBahan)])
+                        ->where('type', $tipeBahan)
                         ->first();
 
                     if (!$ingredient) {
                         $errors++;
-                        $messages[] = "Menu '{$namaMenu}': Bahan '{$namaBahan}' tidak ditemukan di sistem.";
+                        $messages[] = "Menu '{$namaMenu}': Bahan '{$namaBahan}' dengan tipe '{$tipeBahanRaw}' tidak ditemukan di sistem.";
                         continue;
                     }
 
