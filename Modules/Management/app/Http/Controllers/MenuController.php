@@ -23,7 +23,7 @@ class MenuController extends Controller
      */
     public function single()
     {
-        $menus = Menu::where('outlet_id', active_outlet_id())->where('type', 'single')->latest()->paginate();
+        $menus = Menu::where('outlet_id', active_outlet_id())->where('type', 'single')->latest()->paginate(10);
 
         $ingredients = Ingredient::query()
             ->where('outlet_id', active_outlet_id())

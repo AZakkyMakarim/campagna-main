@@ -44,7 +44,7 @@
             <tbody class="divide-y divide-gray-200">
                 @foreach($menus as $key => $menu)
                     <tr class="hover:bg-gray-50 transition">
-                        <td class="px-4 py-3">{{ $key + 1 + (((request('page') ?? 1) - 1) * 15) }}</td>
+                        <td class="px-4 py-3">{{ $key + 1 + (((request('page') ?? 1) - 1) * 10) }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ $menu->name }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ $menu->sku }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ $menu->category }}</td>
@@ -84,6 +84,11 @@
                 @endforeach
             </tbody>
         </table>
+        @if($menus->hasPages())
+            <div class="px-5 py-4 border-t border-gray-200">
+                {{ $menus->links() }}
+            </div>
+        @endif
     </div>
 @endsection
 
@@ -99,10 +104,10 @@
                             <p class="font-semibold mb-1">Panduan Import:</p>
                             <ul class="list-disc list-inside space-y-1 text-blue-700">
                                 <li>Gunakan format <b>.xlsx</b> atau <b>.csv</b></li>
-                                <li>Kolom wajib: <span class="font-medium bg-blue-100 px-1 rounded">Nama Menu</span>, <span class="font-medium bg-blue-100 px-1 rounded">SKU</span>, <span class="font-medium bg-blue-100 px-1 rounded">Kategori</span>, <span class="font-medium bg-blue-100 px-1 rounded">Harga Jual</span>, <span class="font-medium bg-blue-100 px-1 rounded">Nama Bahan</span>, <span class="font-medium bg-blue-100 px-1 rounded">Qty</span></li>
+                                <li>Kolom wajib: <span class="font-medium bg-blue-100 px-1 rounded">Nama Menu</span>, <span class="font-medium bg-blue-100 px-1 rounded">SKU</span>, <span class="font-medium bg-blue-100 px-1 rounded">Kategori</span>, <span class="font-medium bg-blue-100 px-1 rounded">Harga Jual</span>, <span class="font-medium bg-blue-100 px-1 rounded">Nama Bahan</span>, <span class="font-medium bg-blue-100 px-1 rounded">Tipe Bahan</span>, <span class="font-medium bg-blue-100 px-1 rounded">Qty</span></li>
                                 <li>Satu menu bisa <b>banyak baris</b> (banyak komponen)</li>
                                 <li>Import akan <b>update</b> menu jika SKU sudah ada</li>
-                                <li>Kategori: <b>makanan</b> atau <b>minuman</b></li>
+                                <li>Kategori: <b>makanan</b> atau <b>minuman</b>. Tipe Bahan: <b>raw</b> / <b>semi</b> / <b>finished</b></li>
                             </ul>
                         </div>
                     </div>

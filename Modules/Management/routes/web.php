@@ -28,6 +28,8 @@ Route::domain('admin.' .config('app.domain'))->middleware(['auth', 'ensure.busin
             Route::get('/', [RecipeController::class, 'index'])->name('management.recipe');
             Route::post('/store', [RecipeController::class, 'store'])->name('management.recipe.store');
             Route::post('/update/{recipe}', [RecipeController::class, 'update'])->name('management.recipe.update');
+            Route::post('/import', [RecipeController::class, 'import'])->name('management.recipe.import');
+            Route::get('/download-template', [RecipeController::class, 'downloadTemplate'])->name('management.recipe.download-template');
         });
 
         Route::prefix('inventory')->group(function () {
@@ -80,6 +82,8 @@ Route::domain('admin.' .config('app.domain'))->middleware(['auth', 'ensure.busin
                 Route::get('/', [MenuController::class, 'bundle'])->name('management.purchasing.menu.bundle');
                 Route::post('/store', [MenuController::class, 'store'])->name('management.purchasing.menu.bundle.store');
                 Route::post('/update/{menu}', [MenuController::class, 'update'])->name('management.purchasing.menu.bundle.update');
+                Route::post('/import', [MenuController::class, 'importBundle'])->name('management.purchasing.menu.bundle.import');
+                Route::get('/download-template', [MenuController::class, 'downloadTemplateBundle'])->name('management.purchasing.menu.bundle.download-template');
             });
         });
         Route::prefix('sales')->group(function (){
