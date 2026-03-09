@@ -77,8 +77,7 @@ class VendorController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Vendor $vendor)
-    {
+    public function update(Request $request, Vendor $vendor) {
         $vendor->update($request->all());
 
         if ($request->expectsJson()) {

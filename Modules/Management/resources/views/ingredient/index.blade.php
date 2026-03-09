@@ -18,37 +18,36 @@
                     Import
                 </button>
 
-                <div x-show="tab === 'raw'">
-                    <div class="flex items-center space-x-3">
-                        <button
-                            @click="$dispatch('open-modal', 'modal-form-raw')"
-                            class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
-                            <i class="fa fa-plus"></i>
-                            Tambah
-                        </button>
-                    </div>
+            <div x-show="tab === 'raw'">
+                <div class="flex items-center space-x-3">
+                    <button
+                        @click="$dispatch('open-modal', 'modal-form-raw')"
+                        class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
+                        <i class="fa fa-plus"></i>
+                        Tambah
+                    </button>
                 </div>
+            </div>
 
-                <div x-show="tab === 'semi'">
-                    <div class="flex items-center space-x-3">
-                        <button
-                            @click="$dispatch('open-modal', 'modal-form-semi')"
-                            class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
-                            <i class="fa fa-plus"></i>
-                            Tambah
-                        </button>
-                    </div>
+            <div x-show="tab === 'semi'">
+                <div class="flex items-center space-x-3">
+                    <button
+                        @click="$dispatch('open-modal', 'modal-form-semi')"
+                        class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
+                        <i class="fa fa-plus"></i>
+                        Tambah
+                    </button>
                 </div>
+            </div>
 
-                <div x-show="tab === 'finished'">
-                    <div class="flex items-center space-x-3">
-                        <button
-                            @click="$dispatch('open-modal', 'modal-form-finished')"
-                            class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
-                            <i class="fa fa-plus"></i>
-                            Tambah
-                        </button>
-                    </div>
+            <div x-show="tab === 'finished'">
+                <div class="flex items-center space-x-3">
+                    <button
+                        @click="$dispatch('open-modal', 'modal-form-finished')"
+                        class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
+                        <i class="fa fa-plus"></i>
+                        Tambah
+                    </button>
                 </div>
             </div>
         </div>

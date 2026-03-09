@@ -42,19 +42,18 @@ class IngredientController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
         $businessId = Auth::user()->business_id;
 
         Ingredient::create([
-            'business_id' => $businessId,
-            'outlet_id' => active_outlet_id(),
-            'name' => $request->name,
-            'code' => uniqid(),
-            'type' => $request->type,
-            'base_unit_id' => $request->base_unit_id,
-            'min_stock' => $request->min_stock,
-            'is_sellable' => $request->is_sellable ?: 0,
+            'business_id'   => $businessId,
+            'outlet_id'     => active_outlet_id(),
+            'name'          => $request->name,
+            'code'          => uniqid(),
+            'type'          => $request->type,
+            'base_unit_id'  => $request->base_unit_id,
+            'min_stock'     => $request->min_stock,
+            'is_sellable'   => $request->is_sellable ?: 0,
         ]);
 
         toast('Bahan berhasil dimasukan!');
@@ -80,8 +79,7 @@ class IngredientController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Ingredient $ingredient)
-    {
+    public function update(Request $request, Ingredient $ingredient) {
         $ingredient->update($request->all());
 
         if ($request->expectsJson()) {
@@ -95,9 +93,7 @@ class IngredientController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
-    {
-    }
+    public function destroy($id) {}
 
     public function import(Request $request, \App\Services\IngredientImportService $importService)
     {

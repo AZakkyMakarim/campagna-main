@@ -30,7 +30,7 @@ class MenuController extends Controller
             ->where('is_active', 1)
             ->with([
                 'baseUnit',
-                'stock',
+                'ingredientStock',
             ])
             ->orderBy('name')
             ->get();
@@ -45,7 +45,12 @@ class MenuController extends Controller
         $menus = (clone $raw)->where('type', 'single')->get();
         $bundles = (clone $raw)->where('type', 'bundle')->get();
 
-        return view('management::menu.bundle.index', compact('menus', 'bundles'));
+        $ingredients = Ingredient::with('ingredientStock')
+            ->where('outlet_id', active_outlet_id())
+            ->where('is_active', 1)
+            ->get();
+
+        return view('management::menu.bundle.index', compact( 'menus', 'bundles', 'ingredients'));
     }
 
     /**
@@ -62,11 +67,11 @@ class MenuController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'sku' => 'required|string|max:100|unique:menus,sku',
-            'category' => 'required|in:makanan,minuman',
+            'name'       => 'required|string|max:255',
+            'sku'        => 'required|string|max:100|unique:menus,sku',
+            'category'   => 'required|in:makanan,minuman',
             'sell_price' => 'required|numeric|min:0',
-            'type' => 'required|in:single,bundle',
+            'type'       => 'required|in:single,bundle',
             'components' => 'required|array|min:1',
         ]);
 
@@ -78,13 +83,13 @@ class MenuController extends Controller
             // =========================
             $menu = Menu::create([
                 'business_id' => auth()->user()->business_id,
-                'outlet_id' => active_outlet_id(),
-                'name' => $request->name,
-                'sku' => $request->sku,
-                'category' => $request->category,
-                'type' => $request->type,
-                'hpp' => $request->hpp,
-                'sell_price' => $request->sell_price,
+                'outlet_id'   => active_outlet_id(),
+                'name'        => $request->name,
+                'sku'         => $request->sku,
+                'category'    => $request->category,
+                'type'        => $request->type,
+                'hpp'         => $request->hpp,
+                'sell_price'  => $request->sell_price,
             ]);
 
             // =========================
@@ -94,19 +99,19 @@ class MenuController extends Controller
 
                 if ($request->type === 'single') {
                     MenuComponent::create([
-                        'menu_id' => $menu->id,
+                        'menu_id'            => $menu->id,
                         'componentable_type' => Ingredient::class,
-                        'componentable_id' => $row['recipe_id'],
-                        'qty' => $row['qty'],
+                        'componentable_id'   => $row['recipe_id'],
+                        'qty'                => $row['qty'],
                     ]);
                 }
 
                 if ($request->type === 'bundle') {
                     MenuComponent::create([
-                        'menu_id' => $menu->id,
-                        'componentable_type' => Menu::class,
-                        'componentable_id' => $row['menu_id'],
-                        'qty' => $row['qty'],
+                        'menu_id'            => $menu->id,
+                        'componentable_type' => $row['componentable_type'],
+                        'componentable_id'   => $row['componentable_id'],
+                        'qty'                => $row['qty'],
                     ]);
                 }
             }
@@ -120,7 +125,7 @@ class MenuController extends Controller
             DB::rollBack();
             dd($e);
 
-            toast('Gagal menyimpan menu: ' . $e->getMessage(), 'error');
+            toast('Gagal menyimpan menu: '.$e->getMessage(), 'error');
             return back();
         }
     }
@@ -144,8 +149,7 @@ class MenuController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Menu $menu)
-    {
+    public function update(Request $request, Menu $menu) {
         DB::beginTransaction();
 
         try {
@@ -157,19 +161,19 @@ class MenuController extends Controller
                 foreach ($request->components as $row) {
                     if ($request->type === 'single') {
                         MenuComponent::create([
-                            'menu_id' => $menu->id,
+                            'menu_id'            => $menu->id,
                             'componentable_type' => Ingredient::class,
-                            'componentable_id' => $row['recipe_id'],
-                            'qty' => $row['qty'],
+                            'componentable_id'   => $row['recipe_id'],
+                            'qty'                => $row['qty'],
                         ]);
                     }
 
                     if ($request->type === 'bundle') {
                         MenuComponent::create([
-                            'menu_id' => $menu->id,
-                            'componentable_type' => Menu::class,
-                            'componentable_id' => $row['menu_id'],
-                            'qty' => $row['qty'],
+                            'menu_id'            => $menu->id,
+                            'componentable_type' => $row['componentable_type'],
+                            'componentable_id'   => $row['componentable_id'],
+                            'qty'                => $row['qty'],
                         ]);
                     }
                 }
@@ -187,7 +191,7 @@ class MenuController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
 
-            toast('Gagal menyimpan menu: ' . $e->getMessage(), 'error');
+            toast('Gagal menyimpan menu: '.$e->getMessage(), 'error');
             return back();
         }
     }
@@ -265,32 +269,5 @@ class MenuController extends Controller
         return Excel::download(new MenuBundleTemplateExport, 'template_import_paket_bundle.xlsx');
     }
 
-    public function transaction(Menu $menu)
-    {
-        //        foreach ($menu->components as $component) {
-//
-//            $ingredient = $component->componentable;
-//            $qtyNeeded  = $component->qty * $soldQty;
-//
-//            if ($ingredient->recipe) {
-//                foreach ($ingredient->recipe->items as $item) {
-//                    consumeFifo(
-//                        $item->ingredient_id,
-//                        $item->quantity * $qtyNeeded,
-//                        $outletId,
-//                        Order::class,
-//                        $orderId
-//                    );
-//                }
-//            } else {
-//                consumeFifo(
-//                    $ingredient->id,
-//                    $qtyNeeded,
-//                    $outletId,
-//                    Order::class,
-//                    $orderId
-//                );
-//            }
-//        }
-    }
+    
 }

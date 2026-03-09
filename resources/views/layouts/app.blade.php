@@ -266,6 +266,63 @@
                                         </li>
                                     </ul>
                                 </li>
+
+                                <li x-data="{ open: activeMenu === 'sales' }">
+                                    <button
+                                        @click="open = !open"
+                                        class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-colors"
+                                        :class="open ? 'text-orange-600' : 'text-gray-700'"
+                                    >
+                                        <div class="flex items-center gap-3">
+                                            <i class="fa fa-layer-group"></i>
+                                            <span class="font-medium">Analisa Kategori</span>
+                                        </div>
+                                        <i :class="open ? 'fa fa-chevron-down' : 'fa fa-chevron-right'"></i>
+                                    </button>
+
+                                    <ul x-show="open" x-transition class="mt-1 ml-4 pl-4 border-l border-gray-300 space-y-1">
+                                        <li>
+                                            <a
+                                                href="{{ route('management.purchasing.sales.category_analysis.nota') }}"
+                                                class="block px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-orange-500 hover:text-white"
+                                                :class="{ 'bg-orange-500 text-white': activeSubmenu === 'category_analysis_nota' }"
+                                                @click="activeSubmenu = 'category_analysis_nota'"
+                                            >
+                                                Nota
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a
+                                                href="{{ route('management.purchasing.sales.category_analysis.menu') }}"
+                                                class="block px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-orange-500 hover:text-white"
+                                                :class="{ 'bg-orange-500 text-white': activeSubmenu === 'category_analysis_menu' }"
+                                                @click="activeSubmenu = 'category_analysis_menu'"
+                                            >
+                                                Menu
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a
+                                                href="{{ route('management.purchasing.sales.category_analysis.payment_method') }}"
+                                                class="block px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-orange-500 hover:text-white"
+                                                :class="{ 'bg-orange-500 text-white': activeSubmenu === 'category_analysis_payment_method' }"
+                                                @click="activeSubmenu = 'category_analysis_payment_method'"
+                                            >
+                                                Metode Pembayaran
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a
+                                                href="{{ route('management.purchasing.sales.category_analysis.order') }}"
+                                                class="block px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-orange-500 hover:text-white"
+                                                :class="{ 'bg-orange-500 text-white': activeSubmenu === 'category_analysis_order' }"
+                                                @click="activeSubmenu = 'category_analysis_order'"
+                                            >
+                                                Order
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
                             </ul>
                         </div>
                     </div>

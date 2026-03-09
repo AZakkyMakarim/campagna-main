@@ -30,7 +30,7 @@ class Ingredient extends Model
         return $this->belongsTo(Outlet::class, 'outlet_id');
     }
 
-    public function stock()
+    public function ingredientStock()
     {
         return $this->hasOne(IngredientStock::class)
             ->where('outlet_id', active_outlet_id());

@@ -114,7 +114,7 @@
                         <i class="fa fa-file-excel text-green-600 text-lg group-hover:scale-110 transition"></i>
                         <span class="font-medium">Download Format.xlsx</span>
                     </a>
-                </div>
+                    </div>
 
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Step 2: Upload File</label>
@@ -147,7 +147,7 @@
                 class="px-5 py-2.5 bg-orange-600 text-white rounded-xl font-medium hover:bg-orange-700 shadow-lg shadow-orange-200 transition">
                 <i class="fa fa-upload mr-2"></i>
                 Mulai Import
-            </button>
+                        </button>
         </div>
     </form>
 </x-modal>
@@ -160,17 +160,17 @@
                 <!-- Informasi Umum -->
                 <div class="md:col-span-2">
                     <h4 class="text-[15px] font-bold text-gray-800 border-b border-gray-200 pb-2">Informasi Umum</h4>
-                </div>
-                
+                    </div>
+
                 <div class="md:col-span-1">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Nama Vendor <span class="text-red-500">*</span></label>
                     <input type="text" name="name" value="{{ old('name') }}" required placeholder="Masukkan nama" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
-                </div>
-                
+                                </div>
+
                 <div class="md:col-span-1">
                     <label class="block text-sm font-bold text-gray-700 mb-2">No Telp <span class="text-red-500">*</span></label>
                     <input type="text" name="phone_number" value="{{ old('phone_number') }}" required placeholder="Contoh: 08123456789" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
-                </div>
+                            </div>
                 
                 <div class="md:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Alamat Vendor</label>
@@ -180,13 +180,13 @@
                 <div class="md:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Link Google Maps</label>
                     <input type="text" name="link_maps" value="{{ old('link_maps') }}" placeholder="Tempel URL Maps disini..." class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
-                </div>
+                        </div>
 
                 <!-- Informasi Rekening Bank -->
                 <div class="md:col-span-2 mt-2">
                     <h4 class="text-[15px] font-bold text-gray-800 border-b border-gray-200 pb-2">Informasi Rekening Bank <span class="text-xs font-normal text-gray-500 ml-1">(Opsional)</span></h4>
-                </div>
-                
+                    </div>
+
                 <div class="md:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Nama Bank</label>
                     <select name="bank_name" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
@@ -258,18 +258,18 @@
                         <!-- Informasi Umum -->
                         <div class="md:col-span-2">
                             <h4 class="text-[15px] font-bold text-gray-800 border-b border-gray-200 pb-2">Informasi Umum</h4>
-                        </div>
-                        
+                            </div>
+
                         <div class="md:col-span-1">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Nama Vendor <span class="text-red-500">*</span></label>
                             <input type="text" name="name" x-model="form.name" required placeholder="Masukkan nama" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
-                        </div>
-                        
+                            </div>
+
                         <div class="md:col-span-1">
                             <label class="block text-sm font-bold text-gray-700 mb-2">No Telp <span class="text-red-500">*</span></label>
                             <input type="text" name="phone_number" x-model="form.phone_number" required placeholder="Contoh: 08123456789" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
-                        </div>
-                        
+                            </div>
+
                         <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Alamat Vendor</label>
                             <textarea name="address" x-model="form.address" placeholder="Tuliskan alamat lengkap..." rows="2" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white resize-none transition-all"></textarea>
@@ -278,13 +278,13 @@
                         <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Link Google Maps</label>
                             <input type="text" name="link_maps" x-model="form.link_maps" placeholder="Tempel URL Maps disini..." class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
-                        </div>
+                            </div>
 
                         <!-- Informasi Rekening Bank -->
                         <div class="md:col-span-2 mt-2">
                             <h4 class="text-[15px] font-bold text-gray-800 border-b border-gray-200 pb-2">Informasi Rekening Bank <span class="text-xs font-normal text-gray-500 ml-1">(Opsional)</span></h4>
-                        </div>
-                        
+                                        </div>
+
                         <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Nama Bank</label>
                             <select name="bank_name" x-model="form.bank_name" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
@@ -293,13 +293,13 @@
                                     <option value="{{ $bank }}">{{ $bank }}</option>
                                 @endforeach
                             </select>
-                        </div>
+                                    </div>
                         
                         <div class="md:col-span-1">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Nomor Rekening</label>
                             <input type="text" name="bank_account_number" x-model="form.bank_account_number" placeholder="Contoh: 1234567890" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
-                        </div>
-                        
+                            </div>
+
                         <div class="md:col-span-1">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Nama Penerima</label>
                             <input type="text" name="bank_account_name" x-model="form.bank_account_name" placeholder="Atas Nama (A/N)" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">

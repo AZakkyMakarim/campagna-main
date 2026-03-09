@@ -29,8 +29,8 @@ class RecipeController extends Controller
             ->withAvg('batches as avg_cost', 'cost_per_unit')
             ->where(
                 [
-                    'business_id' => Auth::user()->business_id,
-                    'outlet_id' => active_outlet_id()
+                    'business_id'   => Auth::user()->business_id,
+                    'outlet_id'     => active_outlet_id()
                 ]
             );
 
@@ -61,27 +61,26 @@ class RecipeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
         DB::beginTransaction();
         try {
             $businessId = Auth::user()->business_id;
 
             $recipe = Recipe::create([
-                'business_id' => $businessId,
-                'outlet_id' => active_outlet_id(),
-                'name' => $request->name ?? Ingredient::find($request->ingredient_id)->name,
-                'ingredient_id' => $request->ingredient_id,
-                'quantity' => $request->quantity,
-                'unit_id' => $request->unit_id,
+                'business_id'       => $businessId,
+                'outlet_id'         => active_outlet_id(),
+                'name'              => $request->name ?? Ingredient::find($request->ingredient_id)->name,
+                'ingredient_id'     => $request->ingredient_id,
+                'quantity'          => $request->quantity,
+                'unit_id'           => $request->unit_id,
             ]);
 
             foreach ($request->components as $component) {
                 RecipeItem::create([
-                    'recipe_id' => $recipe->id,
-                    'ingredient_id' => $component['ingredient_id'],
-                    'quantity' => $component['qty'],
-                    'unit_id' => $component['unit_id'],
+                    'recipe_id'         => $recipe->id,
+                    'ingredient_id'     => $component['ingredient_id'],
+                    'quantity'          => $component['qty'],
+                    'unit_id'           => $component['unit_id'],
                 ]);
             }
 
@@ -113,8 +112,7 @@ class RecipeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Recipe $recipe)
-    {
+    public function update(Request $request, Recipe $recipe) {
         $recipe->update($request->all());
 
         if ($recipe->ingredient) {
@@ -127,10 +125,10 @@ class RecipeController extends Controller
 
         foreach ($request->components as $component) {
             RecipeItem::create([
-                'recipe_id' => $recipe->id,
+                'recipe_id'     => $recipe->id,
                 'ingredient_id' => $component['ingredient_id'],
-                'quantity' => $component['quantity'],
-                'unit_id' => $component['unit_id'],
+                'quantity'      => $component['quantity'],
+                'unit_id'       => $component['unit_id'],
             ]);
         }
 

@@ -10,9 +10,10 @@ use Modules\Management\Http\Controllers\PurchaseController;
 use Modules\Management\Http\Controllers\StockController;
 use Modules\Management\Http\Controllers\ProductionController;
 use Modules\Management\Http\Controllers\MenuController;
+use Modules\Management\Http\Controllers\CategoryAnalysisController;
 
-Route::domain('admin.' . config('app.domain'))->middleware(['auth', 'ensure.business.outlet'])->group(function () {
-    Route::prefix('management')->group(function () {
+Route::domain('admin.' .config('app.domain'))->middleware(['auth', 'ensure.business.outlet'])->group(function () {
+    Route::prefix('management')->group(function (){
         Route::get('/', [ManagementController::class, 'index'])->name('management');
 
         Route::prefix('ingredient')->group(function () {
@@ -27,8 +28,6 @@ Route::domain('admin.' . config('app.domain'))->middleware(['auth', 'ensure.busi
             Route::get('/', [RecipeController::class, 'index'])->name('management.recipe');
             Route::post('/store', [RecipeController::class, 'store'])->name('management.recipe.store');
             Route::post('/update/{recipe}', [RecipeController::class, 'update'])->name('management.recipe.update');
-            Route::post('/import', [RecipeController::class, 'import'])->name('management.recipe.import');
-            Route::get('/download-template', [RecipeController::class, 'downloadTemplate'])->name('management.recipe.download-template');
         });
 
         Route::prefix('inventory')->group(function () {
@@ -81,8 +80,16 @@ Route::domain('admin.' . config('app.domain'))->middleware(['auth', 'ensure.busi
                 Route::get('/', [MenuController::class, 'bundle'])->name('management.purchasing.menu.bundle');
                 Route::post('/store', [MenuController::class, 'store'])->name('management.purchasing.menu.bundle.store');
                 Route::post('/update/{menu}', [MenuController::class, 'update'])->name('management.purchasing.menu.bundle.update');
-                Route::post('/import', [MenuController::class, 'importBundle'])->name('management.purchasing.menu.bundle.import');
-                Route::get('/download-template', [MenuController::class, 'downloadTemplateBundle'])->name('management.purchasing.menu.bundle.download-template');
+            });
+        });
+        Route::prefix('sales')->group(function (){
+            Route::prefix('category_analysis')->group(function (){
+                Route::get('/nota', [CategoryAnalysisController::class, 'nota'])->name('management.purchasing.sales.category_analysis.nota');
+                Route::get('/menu', [CategoryAnalysisController::class, 'menu'])->name('management.purchasing.sales.category_analysis.menu');
+                Route::get('/payment-method', [CategoryAnalysisController::class, 'paymentMethod'])->name('management.purchasing.sales.category_analysis.payment_method');
+                Route::get('/order', [CategoryAnalysisController::class, 'order'])->name('management.purchasing.sales.category_analysis.order');
+
+                Route::get('/get-order/{id}', [CategoryAnalysisController::class, 'getOrder'])->name('management.purchasing.sales.category_analysis.get-order');
             });
         });
     });
