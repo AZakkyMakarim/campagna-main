@@ -192,22 +192,4 @@ class PurchaseController extends Controller
      * Remove the specified resource from storage.
      */
     public function destroy($id) {}
-
-    public function vendorIngredients(Vendor $vendor)
-    {
-        $ingredients = Ingredient::whereHas('vendors', function ($q) use ($vendor) {
-                $q->where('vendors.id', $vendor->id);
-            })
-            ->where('outlet_id', active_outlet_id())
-            ->with('baseUnit')
-            ->orderBy('name')
-            ->get()
-            ->groupBy(fn ($i) => match ($i->type) {
-                'raw'  => 'Bahan Baku',
-                'semi' => 'Bahan Setengah Jadi',
-                default => 'Lainnya',
-            });
-
-        return response()->json($ingredients);
-    }
 }

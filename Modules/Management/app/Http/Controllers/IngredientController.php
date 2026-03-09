@@ -115,16 +115,13 @@ class IngredientController extends Controller
             $result = $importService->import($path, $businessId, $outletId);
 
             if ($result['errors'] > 0) {
-                if ($result['success'] > 0) {
-                    toast("Import selesai dengan " . $result['success'] . " sukses dan " . $result['errors'] . " error.", 'warning');
-                } else {
-                    $firstError = $result['messages'][0] ?? 'Terjadi kesalahan.';
-                    toast("Import gagal: $firstError", 'error');
-                }
-            } else {
-                toast("Import berhasil! " . $result['success'] . " bahan ditambahkan/diperbarui.", 'success');
-            }
-        } catch (\Exception $e) {
+            session()->flash('import_errors_count', $result['errors']);
+            session()->flash('import_success_count', $result['success']);
+            session()->flash('import_errors_messages', $result['messages']);
+        } else {
+            toast("Import berhasil! " . $result['success'] . " bahan ditambahkan/diperbarui.", 'success');
+        }
+    } catch (\Exception $e) {
             toast("Terjadi kesalahan sistem: " . $e->getMessage(), 'error');
         }
 

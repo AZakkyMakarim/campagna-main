@@ -102,5 +102,11 @@ return [
                 'icon'  => 'fa-circle-check'
             ],
         ]
+    ],
+    'banks' => [
+        'BCA',
+        'BRI',
+        'BNI',
+        'MANDIRI',
     ]
 ];

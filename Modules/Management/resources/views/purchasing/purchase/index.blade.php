@@ -243,7 +243,7 @@
     <div class="bg-white w-full rounded-lg shadow-lg p-6 space-y-6">
         <!-- HEADER INFO -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-            <div class="rounded-lg p-4 border border-gray-200 shadow shadow-md">
+            <div class="rounded-lg p-4 border border-gray-200 shadow-md">
                 <div class="space-y-1">
                     <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wide">
                         <i class="fa fa-house"></i> Vendor
@@ -252,7 +252,7 @@
                 </div>
             </div>
 
-            <div class="rounded-lg p-4 border border-gray-200 shadow shadow-md">
+            <div class="rounded-lg p-4 border border-gray-200 shadow-md">
                 <div class="space-y-1">
                     <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wide">
                         <i class="fa fa-user"></i> PIC
@@ -261,7 +261,7 @@
                 </div>
             </div>
 
-            <div class="rounded-lg p-4 border border-gray-200 shadow shadow-md">
+            <div class="rounded-lg p-4 border border-gray-200 shadow-md">
                 <div class="space-y-1">
                     <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wide">
                         <i class="fa fa-calendar"></i> Tanggal Pembelian
@@ -270,7 +270,7 @@
                 </div>
             </div>
 
-            <div class="rounded-lg p-4 border border-gray-200 shadow shadow-md">
+            <div class="rounded-lg p-4 border border-gray-200 shadow-md">
                 <div class="space-y-1">
                     <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wide">
                         <i class="fa fa-dollar-sign"></i> Total Pembelian
@@ -379,11 +379,11 @@
         }
 
         window.ingredientData = @json($ingredientPayload);
+        window.ingredientGroups = @json($ingredients);
 
         document.addEventListener('DOMContentLoaded', () => {
 
             let itemIndex = 1;
-            let vendorIngredientCache = null;
 
             const vendorSelect = $('select[name="vendor_id"]');
 
@@ -399,28 +399,8 @@
                 initSelect2($(this));
             });
 
-            /** ===============================
-             * LOAD INGREDIENT BY VENDOR
-             * =============================== */
-            vendorSelect.on('change', function () {
-                const vendorId = this.value;
-                vendorIngredientCache = null;
-
-                if (!vendorId) return;
-
-                fetch(
-                    "{{ route('management.purchasing.purchase.vendor.ingredients', ':id') }}"
-                        .replace(':id', vendorId)
-                )
-                    .then(res => res.json())
-                    .then(groups => {
-                        vendorIngredientCache = groups;
-
-                        $('.ingredient-select').each(function () {
-                            populateIngredientSelect($(this), groups);
-                        });
-                    });
-            });
+            // Populate baris pertama
+            populateIngredientSelect($('select[name="items[0][ingredient_id]"]'), window.ingredientGroups);
 
             /** ===============================
              * ADD ROW
@@ -515,13 +495,11 @@
                 // init select2
                 initSelect2(row.find('select'));
 
-                // auto load ingredient dari vendor
-                if (vendorIngredientCache) {
-                    populateIngredientSelect(
-                        row.find('.ingredient-select'),
-                        vendorIngredientCache
-                    );
-                }
+                // auto load all ingredients
+                populateIngredientSelect(
+                    row.find('.ingredient-select'),
+                    window.ingredientGroups
+                );
 
                 itemIndex++;
             });

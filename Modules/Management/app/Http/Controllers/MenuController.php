@@ -214,15 +214,9 @@ class MenuController extends Controller
             $result = $importService->import($path, $businessId, $outletId);
 
             if ($result['errors'] > 0) {
-                if ($result['success'] > 0) {
-                    toast(
-                        "Import selesai: " . $result['success'] . " menu berhasil, " . $result['errors'] . " error.",
-                        'warning'
-                    );
-                } else {
-                    $firstError = $result['messages'][0] ?? 'Terjadi kesalahan.';
-                    toast("Import gagal: $firstError", 'error');
-                }
+                session()->flash('import_errors_count', $result['errors']);
+                session()->flash('import_success_count', $result['success']);
+                session()->flash('import_errors_messages', $result['messages']);
             } else {
                 toast("Import berhasil! " . $result['success'] . " menu ditambahkan/diperbarui.", 'success');
             }
@@ -253,15 +247,9 @@ class MenuController extends Controller
             $result = $importService->import($path, $businessId, $outletId);
 
             if ($result['errors'] > 0) {
-                if ($result['success'] > 0) {
-                    toast(
-                        "Import selesai: " . $result['success'] . " paket berhasil, " . $result['errors'] . " error.",
-                        'warning'
-                    );
-                } else {
-                    $firstError = $result['messages'][0] ?? 'Terjadi kesalahan.';
-                    toast("Import gagal: $firstError", 'error');
-                }
+                session()->flash('import_errors_count', $result['errors']);
+                session()->flash('import_success_count', $result['success']);
+                session()->flash('import_errors_messages', $result['messages']);
             } else {
                 toast("Import berhasil! " . $result['success'] . " paket ditambahkan/diperbarui.", 'success');
             }

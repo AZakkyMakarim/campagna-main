@@ -13,11 +13,10 @@ class VendorImportService
 {
     /**
      * Import vendor dari file Excel/CSV.
-     * Format baris: Nama Vendor | No Telp | Alamat | Link Maps | Nama Bahan
+     * Format baris: Nama Vendor | No Telp | Alamat | Link Maps | Nama Bank | Nomor Rekening | Nama Penerima
      *
-     * Setiap vendor bisa punya banyak baris (banyak bahan suplai).
      * Import akan CREATE vendor baru jika nama+nomer telp belum ada,
-     * atau UPDATE & replace daftar bahannya jika sudah ada.
+     * atau UPDATE jika sudah ada.
      */
     public function import(string $filePath, int $businessId, int $outletId): array
     {
@@ -51,6 +50,9 @@ class VendorImportService
                 $noTelp = trim($firstRow['no_telp'] ?? $firstRow['no telp'] ?? '');
                 $alamat = trim($firstRow['alamat'] ?? '');
                 $linkMaps = trim($firstRow['link_maps'] ?? $firstRow['link maps'] ?? '');
+                $namaBank = trim($firstRow['nama_bank'] ?? $firstRow['nama bank'] ?? '');
+                $nomorRekening = trim($firstRow['nomor_rekening'] ?? $firstRow['nomor rekening'] ?? $firstRow['no_rekening'] ?? $firstRow['no rekening'] ?? '');
+                $namaPenerima = trim($firstRow['nama_penerima'] ?? $firstRow['nama penerima'] ?? '');
 
                 if (empty($namaVendor)) {
                     $errors++;
@@ -70,42 +72,14 @@ class VendorImportService
                     'phone_number' => $noTelp,
                     'address' => $alamat,
                     'link_maps' => $linkMaps ?: null,
+                    'bank_name' => $namaBank ?: null,
+                    'bank_account_number' => $nomorRekening ?: null,
+                    'bank_account_name' => $namaPenerima ?: null,
                     'is_active' => 1,
                 ]);
 
+                // Save vendor
                 $vendor->save();
-
-                // Hapus VendorIngredient lama yang terkait outlet ini (replace logic)
-                VendorIngredient::where('vendor_id', $vendor->id)
-                    ->whereHas('ingredient', fn($q) => $q->where('outlet_id', $outletId))
-                    ->delete();
-
-                foreach ($rows as $row) {
-                    $namaBahan = trim($row['nama_bahan'] ?? $row['nama bahan'] ?? '');
-
-                    if (empty($namaBahan)) {
-                        // Baris tanpa nama bahan = abaikan (boleh ada vendor tanpa bahan)
-                        continue;
-                    }
-
-                    $ingredient = Ingredient::where('outlet_id', $outletId)
-                        ->whereRaw('LOWER(name) = ?', [strtolower($namaBahan)])
-                        ->first();
-
-                    if (!$ingredient) {
-                        $errors++;
-                        $messages[] = "Vendor '{$namaVendor}': Bahan '{$namaBahan}' tidak ditemukan di sistem.";
-                        continue;
-                    }
-
-                    // Cegah duplikasi
-                    VendorIngredient::firstOrCreate([
-                        'vendor_id' => $vendor->id,
-                        'ingredient_id' => $ingredient->id,
-                    ], [
-                        'outlet_id' => $outletId,
-                    ]);
-                }
 
                 $success++;
             }

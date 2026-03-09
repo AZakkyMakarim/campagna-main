@@ -443,6 +443,7 @@
 
 @vite('resources/js/app.js')
 <x-alert />
+<x-import-errors-modal />
 @stack('js')
 <script>
     document.addEventListener('alpine:init', () => {

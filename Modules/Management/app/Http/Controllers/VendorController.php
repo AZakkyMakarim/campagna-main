@@ -47,15 +47,10 @@ class VendorController extends Controller
             'phone_number' => $request->phone_number,
             'address' => $request->address,
             'link_maps' => $request->link_maps,
+            'bank_name' => $request->bank_name,
+            'bank_account_number' => $request->bank_account_number,
+            'bank_account_name' => $request->bank_account_name,
         ]);
-
-        foreach (json_decode($request->components) as $component) {
-            VendorIngredient::create([
-                'vendor_id' => $vendor->id,
-                'outlet_id' => active_outlet_id(),
-                'ingredient_id' => $component->ingredient_id,
-            ]);
-        }
 
         DB::commit();
 
@@ -85,17 +80,6 @@ class VendorController extends Controller
     public function update(Request $request, Vendor $vendor)
     {
         $vendor->update($request->all());
-
-        $vendor->vendorIngredients()->delete();
-
-        $components = json_decode($request->components, true) ?? [];
-
-        foreach ($components as $component) {
-            VendorIngredient::create([
-                'vendor_id' => $vendor->id,
-                'ingredient_id' => $component['ingredient_id'],
-            ]);
-        }
 
         if ($request->expectsJson()) {
             return api_status_ok($vendor);
@@ -127,15 +111,9 @@ class VendorController extends Controller
             $result = $importService->import($path, $businessId, $outletId);
 
             if ($result['errors'] > 0) {
-                if ($result['success'] > 0) {
-                    toast(
-                        "Import selesai: " . $result['success'] . " vendor berhasil, " . $result['errors'] . " error.",
-                        'warning'
-                    );
-                } else {
-                    $firstError = $result['messages'][0] ?? 'Terjadi kesalahan.';
-                    toast("Import gagal: $firstError", 'error');
-                }
+                session()->flash('import_errors_count', $result['errors']);
+                session()->flash('import_success_count', $result['success']);
+                session()->flash('import_errors_messages', $result['messages']);
             } else {
                 toast("Import berhasil! " . $result['success'] . " vendor ditambahkan/diperbarui.", 'success');
             }

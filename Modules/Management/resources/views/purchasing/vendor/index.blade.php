@@ -67,6 +67,9 @@
                                             phone_number: @js($vendor->phone_number),
                                             address: @js($vendor->address),
                                             link_maps: @js($vendor->link_maps),
+                                            bank_name: @js($vendor->bank_name),
+                                            bank_account_number: @js($vendor->bank_account_number),
+                                            bank_account_name: @js($vendor->bank_account_name),
                                             components: @js($vendor->vendor_components),
                                         },
                                         action: $el.dataset.route
@@ -96,11 +99,9 @@
                             <p class="font-semibold mb-1">Panduan Import:</p>
                             <ul class="list-disc list-inside space-y-1 text-blue-700">
                                 <li>Gunakan format <b>.xlsx</b> atau <b>.csv</b></li>
-                                <li>Kolom wajib: <span class="font-medium bg-blue-100 px-1 rounded">Nama Vendor</span>, <span class="font-medium bg-blue-100 px-1 rounded">No Telp</span>, <span class="font-medium bg-blue-100 px-1 rounded">Nama Bahan</span></li>
+                                <li>Kolom wajib: <span class="font-medium bg-blue-100 px-1 rounded">Nama Vendor</span>, <span class="font-medium bg-blue-100 px-1 rounded">No Telp</span></li>
                                 <li>Kolom opsional: <span class="font-medium bg-blue-100 px-1 rounded">Alamat</span>, <span class="font-medium bg-blue-100 px-1 rounded">Link Maps</span></li>
-                                <li>Satu vendor bisa punya <b>banyak baris</b> bahan suplai</li>
-                                <li><b>Nama Bahan</b> harus sudah ada di sistem</li>
-                                <li>Import akan <b>update</b> vendor jika nama sudah ada</li>
+                                <li>Import akan <b>update</b> vendor jika nama dan no telp sudah ada</li>
                             </ul>
                         </div>
                     </div>
@@ -151,83 +152,64 @@
     </form>
 </x-modal>
 
-<x-modal id="modal-form-vendor" title="Tambah Vendor" icon="fa-plus" size="5xl">
+<x-modal id="modal-form-vendor" title="Tambah Vendor" icon="fa-plus" size="xl">
     <form method="POST" action="{{ route('management.purchasing.vendor.store') }}">
         @csrf
-        <div class="p-5 text-gray-300">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Nama</label>
-                        <input type="text" name="name" value="{{ old('name') }}" required placeholder="Nama vendor" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">No Telp</label>
-                        <input type="text" name="phone_number" value="{{ old('phone_number') }}" required placeholder="No Telp" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Alamat</label>
-                        <textarea name="address" placeholder="Alamat" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white">{{ old('description') }}</textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Link Maps</label>
-                        <input type="text" name="link_maps" value="{{ old('link_maps') }}" required placeholder="Link Map" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white">
-                    </div>
+        <div class="p-6 text-gray-300 overflow-y-auto" style="max-height: 60vh;">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Informasi Umum -->
+                <div class="md:col-span-2">
+                    <h4 class="text-[15px] font-bold text-gray-800 border-b border-gray-200 pb-2">Informasi Umum</h4>
                 </div>
-                <div
-                    x-data="vendorComponent({
-                                ingredients: @js($ingredients),
-                            })"
-                    class="space-y-2"
-                >
+                
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Nama Vendor <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" value="{{ old('name') }}" required placeholder="Masukkan nama" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
+                </div>
+                
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">No Telp <span class="text-red-500">*</span></label>
+                    <input type="text" name="phone_number" value="{{ old('phone_number') }}" required placeholder="Contoh: 08123456789" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Alamat Vendor</label>
+                    <textarea name="address" placeholder="Tuliskan alamat lengkap..." rows="2" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white resize-none transition-all">{{ old('address') }}</textarea>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Link Google Maps</label>
+                    <input type="text" name="link_maps" value="{{ old('link_maps') }}" placeholder="Tempel URL Maps disini..." class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
+                </div>
 
-                    <!-- INPUT BAR -->
-                    <label class="block text-sm font-bold text-gray-700">Tambah Barang</label>
-                    <div class="flex items-center gap-3">
-                        <!-- Select Ingredient -->
-                        <select x-model="selectedIngredient" class="flex-1 text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white">
-                            <option value="">Pilih barang...</option>
-                            <template x-for="item in ingredients" :key="item.id">
-                                <option :value="item.id" x-text="item.name"></option>
-                            </template>
-                        </select>
-
-                        <!-- Add Button -->
-                        <button @click="addComponent"
-                                type="button"
-                                class="w-12 h-12 rounded-xl border border-gray-300 flex items-center justify-center hover:bg-orange-500 hover:text-white transition">
-                            +
-                        </button>
-                    </div>
-
-                    <!-- LIST KOMPONEN -->
-                    <div class="border divide-y">
-                        <template x-for="(item, index) in components" :key="index">
-                            <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition">
-                                <div>
-                                    <p class="font-medium text-gray-700" x-text="item.name"></p>
-                                </div>
-
-                                <button @click="removeComponent(index)"
-                                        class="text-red-500 hover:text-red-700">
-                                    ✕
-                                </button>
-                            </div>
-                        </template>
-
-                        <div x-show="components.length === 0"
-                             class="px-4 py-6 text-center text-gray-400 text-sm">
-                            Belum ada komponen resep
-                        </div>
-                    </div>
-
-                    <!-- HIDDEN INPUT (BUAT SUBMIT FORM) -->
-                    <input type="hidden" name="components" :value="JSON.stringify(components)">
+                <!-- Informasi Rekening Bank -->
+                <div class="md:col-span-2 mt-2">
+                    <h4 class="text-[15px] font-bold text-gray-800 border-b border-gray-200 pb-2">Informasi Rekening Bank <span class="text-xs font-normal text-gray-500 ml-1">(Opsional)</span></h4>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Nama Bank</label>
+                    <select name="bank_name" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
+                        <option value="">Pilih Bank...</option>
+                        @foreach(config('array.banks', []) as $bank)
+                            <option value="{{ $bank }}" @selected(old('bank_name') == $bank)>{{ $bank }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Nomor Rekening</label>
+                    <input type="text" name="bank_account_number" value="{{ old('bank_account_number') }}" placeholder="Contoh: 1234567890" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
+                </div>
+                
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Nama Penerima</label>
+                    <input type="text" name="bank_account_name" value="{{ old('bank_account_name') }}" placeholder="Atas Nama (A/N)" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
                 </div>
             </div>
         </div>
 
-        <div class="flex justify-end gap-3 px-5 py-4">
+        <div class="flex justify-end gap-3 px-5 py-4 bg-gray-50 rounded-b-xl border-t border-gray-200">
             <button
                 type="button"
                 @click="$dispatch('close-modal')"
@@ -255,7 +237,7 @@
     class="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
 >
 
-    <div class="relative w-full max-w-5xl bg-white rounded-xl shadow-xl border border-gray-300">
+    <div class="relative w-full max-w-3xl bg-white rounded-xl shadow-xl border border-gray-300">
 
         <!-- Header -->
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-300">
@@ -271,91 +253,64 @@
 
             <form :action="action" method="POST">
                 @csrf
-                <div class="p-5 text-gray-300">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Nama</label>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    x-model="form.name"
-                                    placeholder="Nama Vendor"
-                                    class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
-                                >
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">No Telp</label>
-                                <input
-                                    type="text"
-                                    name="phone_number"
-                                    x-model="form.phone_number"
-                                    placeholder="No Telp"
-                                    class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
-                                >
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Alamat</label>
-                                <textarea x-model="form.address" name="address" placeholder="Masukan alamat" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white">{{ old('description') }}</textarea>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Link Maps</label>
-                                <input
-                                    type="text"
-                                    name="link_maps"
-                                    x-model="form.link_maps"
-                                    placeholder="Link Map"
-                                    class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
-                                >
-                            </div>
+                <div class="p-6 text-gray-300 overflow-y-auto" style="max-height: 60vh;">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <!-- Informasi Umum -->
+                        <div class="md:col-span-2">
+                            <h4 class="text-[15px] font-bold text-gray-800 border-b border-gray-200 pb-2">Informasi Umum</h4>
                         </div>
-                        <div class="space-y-3">
-                            <label class="block text-sm font-bold text-gray-700">Komponen Resep</label>
+                        
+                        <div class="md:col-span-1">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nama Vendor <span class="text-red-500">*</span></label>
+                            <input type="text" name="name" x-model="form.name" required placeholder="Masukkan nama" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
+                        </div>
+                        
+                        <div class="md:col-span-1">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">No Telp <span class="text-red-500">*</span></label>
+                            <input type="text" name="phone_number" x-model="form.phone_number" required placeholder="Contoh: 08123456789" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Alamat Vendor</label>
+                            <textarea name="address" x-model="form.address" placeholder="Tuliskan alamat lengkap..." rows="2" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white resize-none transition-all"></textarea>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Link Google Maps</label>
+                            <input type="text" name="link_maps" x-model="form.link_maps" placeholder="Tempel URL Maps disini..." class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
+                        </div>
 
-                            <!-- INPUT BAR -->
-                            <div class="flex gap-2">
-                                <select x-model="selectedIngredient" class="flex-1 text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white">
-                                    <option value="">Pilih bahan</option>
-                                    <template x-for="r in ingredients">
-                                        <option :value="r.id" x-text="r.name"></option>
-                                    </template>
-                                </select>
-
-                                <button type="button" @click="addComponent"
-                                        class="w-12 h-12 rounded-xl border border-gray-300 flex items-center justify-center hover:bg-orange-500 hover:text-white transition">+</button>
-                            </div>
-
-                            <!-- LIST -->
-                            <div class="border rounded divide-y">
-                                <template x-for="(item, index) in form.components" :key="index">
-                                    <div class="flex justify-between px-4 py-2 border-b">
-                                        <div>
-                                            <p class="font-medium text-gray-700" x-text="item.name"></p>
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            @click="removeComponent(index)"
-                                            class="text-red-500 hover:text-red-700"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                </template>
-                            </div>
-
-                            <input type="hidden" name="components" :value="JSON.stringify(form.components)">
+                        <!-- Informasi Rekening Bank -->
+                        <div class="md:col-span-2 mt-2">
+                            <h4 class="text-[15px] font-bold text-gray-800 border-b border-gray-200 pb-2">Informasi Rekening Bank <span class="text-xs font-normal text-gray-500 ml-1">(Opsional)</span></h4>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nama Bank</label>
+                            <select name="bank_name" x-model="form.bank_name" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
+                                <option value="">Pilih Bank...</option>
+                                @foreach(config('array.banks', []) as $bank)
+                                    <option value="{{ $bank }}">{{ $bank }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <div class="md:col-span-1">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nomor Rekening</label>
+                            <input type="text" name="bank_account_number" x-model="form.bank_account_number" placeholder="Contoh: 1234567890" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
+                        </div>
+                        
+                        <div class="md:col-span-1">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nama Penerima</label>
+                            <input type="text" name="bank_account_name" x-model="form.bank_account_name" placeholder="Atas Nama (A/N)" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-3 px-5 py-4">
+                <div class="flex justify-end gap-3 px-5 py-4 bg-gray-50 rounded-b-xl border-t border-gray-200">
                     <button
                         type="button"
-                        @click="$dispatch('close-modal')"
+                        @click="open = false"
                         class="px-4 py-2 rounded-lg border border-gray-300 hover:cursor-pointer hover:bg-orange-100 hover:text-orange-400">
                         Batal
                     </button>
@@ -419,6 +374,10 @@
                     name: '',
                     phone_number: '',
                     address:'',
+                    link_maps: '',
+                    bank_name: '',
+                    bank_account_number: '',
+                    bank_account_name: '',
                     components: '',
                 },
                 selectedIngredient: '',
@@ -435,6 +394,9 @@
                         phone_number: vendor.phone_number,
                         address: vendor.address,
                         link_maps: vendor.link_maps,
+                        bank_name: vendor.bank_name,
+                        bank_account_number: vendor.bank_account_number,
+                        bank_account_name: vendor.bank_account_name,
                         components: vendor.components ?? []
                     }
                 },
