@@ -61,4 +61,17 @@ class Order extends Model
     {
         return max(0, $this->grand_total - $this->paid_amount);
     }
+
+    public function calculateHpp(): float
+    {
+        $this->loadMissing('items.menu');
+
+        return $this->items->sum(function ($item) {
+
+            $menuHpp = (float) ($item->menu->hpp ?? 0);
+            $qty = (float) ($item->qty ?? 0);
+
+            return $menuHpp * $qty;
+        });
+    }
 }

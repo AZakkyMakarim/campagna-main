@@ -50,7 +50,7 @@
                         <td class="px-4 py-3 text-nowrap">{{ $menu->category }}</td>
                         <td class="px-4 py-3 text-nowrap"></td>
                         <td class="px-4 py-3 text-nowrap">{{ count($menu->components) }} Bahan</td>
-                        <td class="px-4 py-3 text-nowrap text-orange-600 font-bold">{{ rp_format($menu->hpp) }}</td>
+                        <td class="px-4 py-3 text-nowrap text-orange-600 font-bold">{{ rp_format($menu->calculateHppDynamic()) }}</td>
                         <td class="px-4 py-3 text-nowrap text-green-600 font-bold">{{ rp_format($menu->sell_price) }}</td>
                         <td class="px-4 py-3">
                             <label class="inline-flex items-center cursor-pointer">
@@ -524,8 +524,8 @@
                     }
                     : null,
 
-                stock: Number(r.stock?.qty || 0),
-                avg_cost: Number(r.stock?.avg_cost || 0),
+                stock: Number(r.ingredient_stock?.qty || 0),
+                avg_cost: Number(r.ingredient_stock?.avg_cost || 0),
 
                 quantity: Number(r.quantity || 1),
 
@@ -535,8 +535,8 @@
                     qty: Number(it.quantity || 0),
 
                     // 🔥 sekarang ambil dari stock snapshot
-                    avg_cost: Number(it.ingredient?.stock?.avg_cost || 0),
-                    stock: Number(it.ingredient?.stock?.qty || 0),
+                    avg_cost: Number(it.ingredient?.ingredient_stock?.avg_cost || 0),
+                    stock: Number(it.ingredient?.ingredient_stock?.qty || 0),
 
                     unit: it.unit
                         ? {
@@ -593,7 +593,7 @@
 
                     // 🔥 kalau tidak punya komponen (bukan semi / bukan resep)
                     if (!picked.items || !picked.items.length) {
-                        row.unit_cost = Number(picked.avg_cost || picked.stock?.avg_cost || 0);
+                        row.unit_cost = Number(picked.avg_cost || picked.ingredient_stock?.avg_cost || 0);
                         this.recalc();
                         return;
                     }
@@ -602,7 +602,7 @@
                     let totalRecipeCost = 0;
 
                     picked.items.forEach(it => {
-                        const avgCost = Number(it.ingredient?.stock?.avg_cost || 0);
+                        const avgCost = Number(it.ingredient?.ingredient_stock?.avg_cost || 0);
                         const qty = Number(it.qty || 0);
 
                         totalRecipeCost += qty * avgCost;

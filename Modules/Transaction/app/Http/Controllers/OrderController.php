@@ -191,11 +191,13 @@ class OrderController extends Controller
             // ITEMS
             // =========================
             foreach ($request->items as $item) {
+                $menu = Menu::find($item['menu_id']);
                 OrderItem::create([
                     'order_id'      => $order->id,
                     'menu_id'       => $item['menu_id'],
                     'name_snapshot' => $menus[$item['menu_id']]->name,
                     'qty'           => $item['qty'],
+                    'hpp'           => $menu->calculateHppDynamic(),
                     'price'         => $menus[$item['menu_id']]->sell_price,
                     'subtotal'      => $menus[$item['menu_id']]->sell_price * $item['qty'],
                     'note'          => $item['note'] ?? null,
@@ -224,7 +226,7 @@ class OrderController extends Controller
                     'order_id' => $order->id,
                     'type'     => 'ROUNDING',
                     'name'     => 'Pembulatan',
-                    'method'   => 'AUTO',
+                    'method'   => 'auto',
                     'value'    => 0,
                     'amount'   => abs($rounding),
                     'is_addition' => $rounding > 0,

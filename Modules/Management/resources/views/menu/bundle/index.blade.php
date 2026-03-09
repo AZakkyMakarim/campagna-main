@@ -50,7 +50,7 @@
                         <td class="px-4 py-3 text-nowrap">{{ $bundle->category }}</td>
                         <td class="px-4 py-3 text-nowrap"></td>
                         <td class="px-4 py-3 text-nowrap">{{ count($bundle->components) }} Bahan</td>
-                        <td class="px-4 py-3 text-nowrap text-orange-600 font-bold">{{ rp_format($bundle->hpp) }}</td>
+                        <td class="px-4 py-3 text-nowrap text-orange-600 font-bold">{{ rp_format($bundle->calculateHppDynamic()) }}</td>
                         <td class="px-4 py-3 text-nowrap text-green-600 font-bold">{{ rp_format($bundle->sell_price) }}</td>
                         <td class="px-4 py-3">
                             <label class="inline-flex items-center cursor-pointer">
@@ -154,7 +154,7 @@
 <x-modal id="modal-form-bundle" title="Tambah Paket" icon="fa-plus" size="7xl">
     <form method="POST"
           action="{{ route('management.purchasing.menu.bundle.store') }}"
-          x-data="bundleForm(@js($menus))">
+          x-data="bundleForm(@js($menus), @js($ingredients))">
 
         @csrf
 
@@ -237,15 +237,28 @@
                                         <label class="block text-xs font-semibold text-gray-600 mb-1">
                                             Menu
                                         </label>
-                                        <select x-model="row.menu_id"
-                                                @change="onPickMenu(idx)"
+                                        <select x-model="row.component_id"
+                                                @change="onPickComponent(idx)"
                                                 class="w-full rounded-lg border border-gray-300 px-3 py-2">
-                                            <option value="">Pilih menu...</option>
-                                            <template x-for="m in menus" :key="m.id">
-                                                <option :value="m.id"
-                                                        x-text="`${m.name} (${formatMoney(m.hpp)})`">
-                                                </option>
-                                            </template>
+
+                                            <option value="">Pilih komponen...</option>
+
+                                            <optgroup label="Menu">
+                                                <template x-for="c in components.filter(c => c.type === 'menu')" :key="c.id">
+                                                    <option :value="c.id"
+                                                            x-text="`${c.name} (${formatMoney(c.hpp)})`">
+                                                    </option>
+                                                </template>
+                                            </optgroup>
+
+                                            <optgroup label="Ingredient">
+                                                <template x-for="c in components.filter(c => c.type === 'ingredient')" :key="c.id">
+                                                    <option :value="c.id"
+                                                            x-text="`${c.name} (${formatMoney(c.hpp)})`">
+                                                    </option>
+                                                </template>
+                                            </optgroup>
+
                                         </select>
                                     </div>
 
@@ -285,8 +298,15 @@
 
                                     {{-- hidden submit --}}
                                     <input type="hidden"
-                                           :name="`components[${idx}][menu_id]`"
-                                           :value="row.menu_id">
+                                           :name="`components[${idx}][componentable_id]`"
+                                           :value="row.component_id">
+
+                                    <input type="hidden"
+                                           :name="`components[${idx}][componentable_type]`"
+                                           :value="row.component_type === 'menu'
+                                                    ? 'App\\Models\\Menu'
+                                                    : 'App\\Models\\Ingredient'">
+
                                     <input type="hidden"
                                            :name="`components[${idx}][qty]`"
                                            :value="row.qty">
@@ -321,7 +341,7 @@
 </x-modal>
 
 <div
-    x-data="bundleEditForm(@js($menus))"
+    x-data="bundleEditForm(@js($menus), @js($ingredients))"
     x-show="open"
     @open-edit-bundle.window="fill($event.detail)"
     x-transition
@@ -413,18 +433,30 @@
                                             <label class="block text-xs font-semibold text-gray-600 mb-1">Komponen</label>
                                             <select
                                                 class="w-full rounded-lg border px-3 py-2"
-                                                x-model="row.menu_id"
-                                                @change="onPickMenu(idx)"
+                                                :value="row.component_id"
+                                                @change="row.component_id = $event.target.value; onPickComponent(idx)"
                                             >
-                                                <option value="">Pilih menu...</option>
+                                                <option value="">Pilih komponen...</option>
 
-                                                <template x-for="m in menus" :key="m.id">
-                                                    <option
-                                                        :value="String(m.id)"
-                                                        :selected="row.menu_id === String(m.id)"
-                                                    x-text="`${m.name} (${formatMoney(m.hpp)})`"
-                                                    ></option>
-                                                </template>
+                                                <optgroup label="Menu">
+                                                    <template x-for="m in menus" :key="'menu-'+m.id">
+                                                        <option
+                                                            :value="`menu-${m.id}`"
+                                                            :selected="row.component_id === `menu-${m.id}`"
+                                                            x-text="`${m.name} (${formatMoney(m.hpp)})`">
+                                                        </option>
+                                                    </template>
+                                                </optgroup>
+
+                                                <optgroup label="Ingredient">
+                                                    <template x-for="i in ingredients" :key="'ingredient-'+i.id">
+                                                        <option
+                                                            :value="`ingredient-${i.id}`"
+                                                            :selected="row.component_id === `ingredient-${i.id}`"
+                                                            x-text="`${i.name} (${formatMoney(i.hpp)})`">
+                                                        </option>
+                                                    </template>
+                                                </optgroup>
                                             </select>
 
                                             <p class="text-xs mt-1"
@@ -458,8 +490,17 @@
                                             </button>
                                         </div>
 
-                                        <input type="hidden" :name="`components[${idx}][menu_id]`" :value="row.menu_id">
-                                        <input type="hidden" :name="`components[${idx}][qty]`" :value="row.qty">
+                                        <input type="hidden"
+                                               :name="`components[${idx}][componentable_type]`"
+                                               :value="row.component_type">
+
+                                        <input type="hidden"
+                                               :name="`components[${idx}][componentable_id]`"
+                                               :value="row.component_real_id">
+
+                                        <input type="hidden"
+                                               :name="`components[${idx}][qty]`"
+                                               :value="row.qty">
                                     </div>
                                 </template>
                             </div>
@@ -522,15 +563,27 @@
                 });
         }
 
-        function bundleForm(menusRaw) {
+        function bundleForm(menusRaw, ingredientsRaw) {
+
             const menus = menusRaw.map(m => ({
                 id: m.id,
                 name: m.name,
                 hpp: Number(m.hpp || 0),
+                type: 'menu'
             }));
 
+            const ingredients = ingredientsRaw.map(i => ({
+                id: i.id,
+                name: i.name,
+                hpp: Number(i.ingredient_stock?.avg_cost || 0),
+                type: 'ingredient'
+            }));
+
+            const components = [...menus, ...ingredients];
+
             return {
-                menus,
+
+                components,
                 rows: [],
                 totalHpp: 0,
 
@@ -543,8 +596,9 @@
                         key: crypto.randomUUID
                             ? crypto.randomUUID()
                             : (Date.now() + Math.random()),
-                        menu_id: '',
-                        menu: null,
+                        component_id: '',
+                        component_type: '',
+                        component: null,
                         qty: 1,
                         sub_hpp: 0,
                     });
@@ -555,18 +609,33 @@
                     this.recalc();
                 },
 
-                onPickMenu(i) {
+                onPickComponent(i) {
+
                     const row = this.rows[i];
-                    row.menu = this.menus.find(m => String(m.id) === String(row.menu_id));
+
+                    const picked = this.components.find(
+                        c => String(c.id) === String(row.component_id)
+                    );
+
+                    row.component = picked;
+                    row.component_type = picked?.type || '';
+
                     this.recalc();
                 },
 
                 recalc() {
                     let total = 0;
+
                     this.rows.forEach(r => {
-                        r.sub_hpp = (r.menu ? r.menu.hpp : 0) * r.qty;
+
+                        const hpp = r.component ? r.component.hpp : 0;
+
+                        r.sub_hpp = hpp * r.qty;
+
                         total += r.sub_hpp;
+
                     });
+
                     this.totalHpp = total;
                 },
 
@@ -577,6 +646,7 @@
                         maximumFractionDigits: 0,
                     }).format(n || 0);
                 }
+
             };
         }
 
@@ -586,17 +656,29 @@
     </script>
 
     <script>
-        function bundleEditForm(menusRaw) {
+        function bundleEditForm(menusRaw, ingredientsRaw) {
             const menus = menusRaw.map(m => ({
-                id: String(m.id),
+                id: m.id,
                 name: m.name,
                 hpp: Number(m.hpp || 0),
+                type: 'menu'
+            }));
+
+            const ingredients = ingredientsRaw.map(i => ({
+                id: i.id,
+                name: i.name,
+                hpp: Number(i.ingredient_stock?.avg_cost || 0),
+                type: 'ingredient'
             }));
 
             return {
+
                 open: false,
                 action: '',
+
                 menus,
+                ingredients,
+
                 components: [],
                 totalHpp: 0,
 
@@ -608,6 +690,7 @@
                 },
 
                 fill({ menu, action }) {
+
                     this.open = true;
                     this.action = action;
 
@@ -616,34 +699,43 @@
                     this.form.category = menu.category;
                     this.form.sell_price = Number(menu.sell_price || 0);
 
-                    // reset dulu
-                    this.components = [];
+                    this.components = (menu.components || []).map(c => {
 
-                    this.$nextTick(() => {
-                        this.components = (menu.components || []).map(c => ({
+                        const isMenu = c.componentable_type.includes('Menu');
+                        const type = isMenu ? 'menu' : 'ingredient';
+
+                        return {
                             key: crypto.randomUUID
                                 ? crypto.randomUUID()
                                 : (Date.now() + Math.random()),
 
-                            menu_id: '',          // ⛔ kosong dulu
-                            menu: null,
+                            component_id: `${type}-${c.componentable_id}`,
+
+                            component_type: isMenu
+                                ? 'App\\Models\\Menu'
+                                : 'App\\Models\\Ingredient',
+
+                            component_real_id: c.componentable_id,
+
+                            component: null,
+
                             qty: Number(c.qty),
                             unit_cost: 0,
                             sub_hpp: 0,
+                        };
 
-                            __target_id: String(c.componentable_id) // simpan target
-                        }));
-
-                        // ⏳ tunggu option selesai render
-                        this.$nextTick(() => {
-                            this.components.forEach((row, idx) => {
-                                row.menu_id = row.__target_id;
-                                this.onPickMenu(idx);
-                            });
-
-                            this.recalc();
-                        });
                     });
+
+                    this.$nextTick(() => {
+
+                        this.components.forEach((row, idx) => {
+                            this.onPickComponent(idx);
+                        });
+
+                        this.recalc();
+
+                    });
+
                 },
 
                 addComponent() {
@@ -651,8 +743,12 @@
                         key: crypto.randomUUID
                             ? crypto.randomUUID()
                             : (Date.now() + Math.random()),
-                        menu_id: '',
-                        menu: null,
+
+                        component_id: '',
+                        component_type: '',
+                        component_real_id: '',
+
+                        component: null,
                         qty: 1,
                         unit_cost: 0,
                         sub_hpp: 0,
@@ -664,13 +760,35 @@
                     this.recalc();
                 },
 
-                onPickMenu(idx) {
-                    const row = this.components[idx];
-                    const picked = this.menus.find(
-                        m => m.id === String(row.menu_id)
-                    );
+                onPickComponent(idx) {
 
-                    row.menu = picked || null;
+                    const row = this.components[idx];
+
+                    if (!row.component_id) {
+                        row.component = null;
+                        row.unit_cost = 0;
+                        row.component_type = '';
+                        row.component_real_id = '';
+                        this.recalc();
+                        return;
+                    }
+
+                    const [type, id] = row.component_id.split('-');
+
+                    let picked = null;
+
+                    if (type === 'menu') {
+                        picked = this.menus.find(m => String(m.id) === id);
+                        row.component_type = 'App\\Models\\Menu';
+                    }
+
+                    if (type === 'ingredient') {
+                        picked = this.ingredients.find(i => String(i.id) === id);
+                        row.component_type = 'App\\Models\\Ingredient';
+                    }
+
+                    row.component_real_id = id;
+                    row.component = picked || null;
                     row.unit_cost = picked ? picked.hpp : 0;
 
                     this.recalc();

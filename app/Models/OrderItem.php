@@ -14,6 +14,7 @@ class OrderItem extends Model
         'qty',
         'done_qty',
         'void_qty',
+        'hpp',
         'price',
         'subtotal',
     ];

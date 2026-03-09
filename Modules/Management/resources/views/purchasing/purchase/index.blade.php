@@ -379,13 +379,10 @@
         }
 
         window.ingredientData = @json($ingredientPayload);
-        window.ingredientGroups = @json($ingredients);
 
         document.addEventListener('DOMContentLoaded', () => {
 
             let itemIndex = 1;
-
-            const vendorSelect = $('select[name="vendor_id"]');
 
             /** ===============================
              * INIT SELECT2
