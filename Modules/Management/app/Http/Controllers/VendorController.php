@@ -2,16 +2,13 @@
 
 namespace Modules\Management\Http\Controllers;
 
-use App\Exports\VendorTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Models\Ingredient;
 use App\Models\Vendor;
 use App\Models\VendorIngredient;
-use App\Services\VendorImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Facades\Excel;
 
 class VendorController extends Controller
 {
@@ -38,19 +35,23 @@ class VendorController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
         DB::beginTransaction();
         $vendor = Vendor::create([
-            'business_id' => Auth::user()->business_id,
-            'name' => $request->name,
-            'phone_number' => $request->phone_number,
-            'address' => $request->address,
-            'link_maps' => $request->link_maps,
-            'bank_name' => $request->bank_name,
-            'bank_account_number' => $request->bank_account_number,
-            'bank_account_name' => $request->bank_account_name,
+            'business_id'   => Auth::user()->business_id,
+            'name'          => $request->name,
+            'phone_number'  => $request->phone_number,
+            'address'       => $request->address,
+            'link_maps'     => $request->link_maps,
         ]);
+
+        foreach (json_decode($request->components) as $component){
+            VendorIngredient::create([
+                'vendor_id'     => $vendor->id,
+                'outlet_id'     => active_outlet_id(),
+                'ingredient_id' => $component->ingredient_id,
+            ]);
+        }
 
         DB::commit();
 
@@ -80,6 +81,17 @@ class VendorController extends Controller
     public function update(Request $request, Vendor $vendor) {
         $vendor->update($request->all());
 
+        $vendor->vendorIngredients()->delete();
+
+        $components = json_decode($request->components, true) ?? [];
+
+        foreach ($components as $component) {
+            VendorIngredient::create([
+                'vendor_id'     => $vendor->id,
+                'ingredient_id' => $component['ingredient_id'],
+            ]);
+        }
+
         if ($request->expectsJson()) {
             return api_status_ok($vendor);
         }
@@ -91,40 +103,5 @@ class VendorController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
-    {
-    }
-
-    public function import(Request $request, VendorImportService $importService)
-    {
-        $request->validate([
-            'file' => 'required|file|mimes:csv,txt,xlsx,xls',
-        ]);
-
-        $file = $request->file('file');
-        $path = $file->getRealPath();
-        $businessId = Auth::user()->business_id;
-        $outletId = active_outlet_id();
-
-        try {
-            $result = $importService->import($path, $businessId, $outletId);
-
-            if ($result['errors'] > 0) {
-                session()->flash('import_errors_count', $result['errors']);
-                session()->flash('import_success_count', $result['success']);
-                session()->flash('import_errors_messages', $result['messages']);
-            } else {
-                toast("Import berhasil! " . $result['success'] . " vendor ditambahkan/diperbarui.", 'success');
-            }
-        } catch (\Exception $e) {
-            toast("Terjadi kesalahan sistem: " . $e->getMessage(), 'error');
-        }
-
-        return back();
-    }
-
-    public function downloadTemplate()
-    {
-        return Excel::download(new VendorTemplateExport, 'template_import_vendor.xlsx');
-    }
+    public function destroy($id) {}
 }

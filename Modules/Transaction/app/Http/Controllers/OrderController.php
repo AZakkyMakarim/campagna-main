@@ -405,17 +405,35 @@ class OrderController extends Controller
         }
     }
 
-    private function printOrderKitchenV2($order){
+    private function printOrderKitchenV2($order)
+    {
         $servicePrinter = new PrinterService();
-        $printers = Printer::where('outlet_id', active_outlet_id())->where('is_active', 1)->get();
+
+        $order->load('items.menu');
+
+        $printers = Printer::where('outlet_id', active_outlet_id())
+            ->where('is_active', 1)
+            ->get();
 
         foreach ($printers as $printer) {
+
+            $sections = $printer->section ?? [];
+
+            $items = $order->items->filter(function ($item) use ($sections) {
+                return in_array($item->menu->category, $sections);
+            });
+
+            if ($items->isEmpty()) {
+                continue;
+            }
+
             $data = [
                 'role'                      => $printer->role,
                 'printer_connection_type'   => $printer->connection_type,
                 'printer_ip'                => $printer->ip_address,
                 'printer_port'              => $printer->port,
                 'order'                     => $order,
+                'items'                     => $items,
             ];
 
             $servicePrinter->print($data);

@@ -182,10 +182,13 @@
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Kategori</label>
                             <select name="category" required
-                                    class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                                    id="selectCategory"
+                                    class="select2 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                    data-placeholder="Pilih atau ketik kategori">
                                 <option value="">Pilih kategori</option>
-                                <option value="makanan">Makanan</option>
-                                <option value="minuman">Minuman</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category }}">{{ strtoupper($category) }}</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
@@ -268,9 +271,7 @@
                                     <div class="col-span-12 md:col-span-1 flex items-center justify-center">
                                         <button type="button"
                                                 @click="removeComponent(idx)"
-                                                class="w-9 h-9 flex items-center justify-center rounded-full
-                   border border-red-200 text-red-500
-                   hover:bg-red-500 hover:text-white transition"
+                                                class="w-9 h-9 flex items-center justify-center rounded-full border border-red-200 text-red-500 hover:bg-red-500 hover:text-white transition"
                                                 title="Hapus">
                                             <i class="fa fa-trash text-xs"></i>
                                         </button>
@@ -356,10 +357,13 @@
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Kategori</label>
                                 <select name="category" required
-                                        x-model="form.category"
-                                        class="w-full rounded-lg border border-gray-300 px-3 py-2">
-                                    <option value="makanan">Makanan</option>
-                                    <option value="minuman">Minuman</option>
+                                        id="selectCategoryEdit"
+                                        class="select2 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                        data-placeholder="Pilih atau ketik kategori">
+                                    <option value="">Pilih kategori</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category }}">{{ strtoupper($category) }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
@@ -481,6 +485,28 @@
 
 @push('js')
     <script>
+        document.addEventListener('open-modal', async (e) => {
+            if (e.detail !== 'modal-form-single') return;
+
+            const selectCategory = $('#selectCategory');
+
+            selectCategory.select2({
+                placeholder: 'Pilih atau ketik kategori',
+                tags: true,
+                width: '100%'
+            });
+        });
+
+        document.addEventListener('open-edit-menu', async (e) => {
+            const selectCategory = $('#selectCategoryEdit');
+
+            selectCategory.select2({
+                placeholder: 'Pilih atau ketik kategori',
+                tags: true,
+                width: '100%'
+            });
+        });
+
         function toggleMenuStatus(el, url) {
             fetch(url, {
                 method: 'POST',

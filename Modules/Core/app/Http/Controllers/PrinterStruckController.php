@@ -3,6 +3,7 @@
 namespace Modules\Core\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Menu;
 use App\Models\Outlet;
 use App\Models\Printer;
 use App\Services\PrinterService;
@@ -25,7 +26,11 @@ class PrinterStruckController extends Controller
             ->latest()
             ->get();
 
-        return view('core::printer_struck.index', compact('printers', 'outlets'));
+        $rawMenus = Menu::where('outlet_id', active_outlet_id())->latest();
+
+        $sections = (clone $rawMenus)->pluck('category')->unique();
+
+        return view('core::printer_struck.index', compact('printers', 'outlets', 'sections'));
     }
 
     public function printTest(PrinterService $service, Printer $printer){
