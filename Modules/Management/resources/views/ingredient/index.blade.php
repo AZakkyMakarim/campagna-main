@@ -18,7 +18,7 @@
                     Import
                 </button>
 
-                <div x-show="tab === 'raw'">
+            <div x-show="tab === 'raw'">
                     <button
                         @click="$dispatch('open-modal', 'modal-form-raw')"
                         class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
@@ -27,7 +27,7 @@
                     </button>
                 </div>
 
-                <div x-show="tab === 'semi'">
+            <div x-show="tab === 'semi'">
                     <button
                         @click="$dispatch('open-modal', 'modal-form-semi')"
                         class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
@@ -36,7 +36,7 @@
                     </button>
                 </div>
 
-                <div x-show="tab === 'finished'">
+            <div x-show="tab === 'finished'">
                     <button
                         @click="$dispatch('open-modal', 'modal-form-finished')"
                         class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">

@@ -35,7 +35,7 @@ class PrinterController extends Controller
         Printer::create([
             'outlet_id'         => $request->outlet_id,
             'role'              => $request->role,
-            'section'           => $request->section,
+            'section'           => json_encode($request->section),
             'device_name'       => $request->device_name,
             'connection_type'   => $request->connection_type,
             'ip_address'        => $request->ip_address,

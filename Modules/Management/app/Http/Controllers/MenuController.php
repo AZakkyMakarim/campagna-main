@@ -23,7 +23,11 @@ class MenuController extends Controller
      */
     public function single()
     {
-        $menus = Menu::where('outlet_id', active_outlet_id())->where('type', 'single')->latest()->paginate(10);
+        $rawMenus = Menu::where('outlet_id', active_outlet_id())->latest();
+
+        $categories = (clone $rawMenus)->pluck('category')->unique();
+
+        $menus = (clone $rawMenus)->where('type', 'single')->paginate();
 
         $ingredients = Ingredient::query()
             ->where('outlet_id', active_outlet_id())
@@ -35,12 +39,15 @@ class MenuController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('management::menu.single.index', compact('ingredients', 'menus'));
+        return view('management::menu.single.index', compact('ingredients', 'menus', 'categories'));
     }
 
     public function bundle()
     {
         $raw = Menu::where('outlet_id', active_outlet_id())->latest();
+
+
+        $categories = (clone $raw)->pluck('category')->unique();
 
         $menus = (clone $raw)->where('type', 'single')->get();
         $bundles = (clone $raw)->where('type', 'bundle')->get();
@@ -50,7 +57,7 @@ class MenuController extends Controller
             ->where('is_active', 1)
             ->get();
 
-        return view('management::menu.bundle.index', compact( 'menus', 'bundles', 'ingredients'));
+        return view('management::menu.bundle.index', compact( 'menus', 'bundles', 'ingredients', 'categories'));
     }
 
     /**
@@ -86,7 +93,7 @@ class MenuController extends Controller
                 'outlet_id'   => active_outlet_id(),
                 'name'        => $request->name,
                 'sku'         => $request->sku,
-                'category'    => $request->category,
+                'category'    => strtolower($request->category),
                 'type'        => $request->type,
                 'hpp'         => $request->hpp,
                 'sell_price'  => $request->sell_price,

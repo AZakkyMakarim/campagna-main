@@ -38,7 +38,11 @@
                         <td class="px-4 py-3">{{ $key + 1 + (((request('page') ?? 1) - 1) * 15) }}</td>
                         <td class="px-4 py-3">{{ strtoupper($printer->role) }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ $printer->device_name }}</td>
-                        <td class="px-4 py-3">{{ strtoupper($printer->section) }}</td>
+                        <td class="px-4 py-3">
+                            @foreach(json_decode($printer->section) as $section)
+                                {{ strtoupper($section) }},
+                            @endforeach
+                        </td>
                         <td class="px-4 py-3 text-nowrap">{{ strtoupper($printer->connection_type) }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ $printer->connection_type == 'lan' ? $printer->ip_address.':'.$printer->port : '' }}</td>
                         <td class="px-4 py-3">
@@ -64,22 +68,6 @@
                                     'type'            => $printer->type ?? 'cashier',
                                 ];
                             @endphp
-
-{{--                            <button--}}
-{{--                                    type="button"--}}
-{{--                                    x-data="{ printer: @js($printerPayload) }"--}}
-{{--                                    class="test-print-btn px-4 py-2 rounded-lg border border-gray-300 hover:cursor-pointer hover:bg-orange-100 hover:text-orange-400 flex items-center gap-2"--}}
-{{--                                    @click="printReceipt({--}}
-{{--                                        printers: [printer],--}}
-{{--                                        esc : {--}}
-{{--                                                default: `TEST PRINT CAMPAGNA -------------------- Printer OK`--}}
-{{--                                              },--}}
-{{--                                        logo: ''--}}
-{{--                                    })"--}}
-{{--                                >--}}
-{{--                                <i class="fa fa-print"></i>--}}
-{{--                                Test Print--}}
-{{--                            </button>--}}
                             <a class="test-print-btn px-4 py-2 rounded-lg border border-gray-300 hover:cursor-pointer hover:bg-orange-100 hover:text-orange-400 flex items-center gap-2"
                                href="{{ route('core.printer-struck.test', $printer) }}">
                                 <i class="fa fa-print"></i>
@@ -183,11 +171,16 @@
                             Section
                         </label>
                         <div class="relative">
-                            <select name="section" required class="w-full appearance-none p-2 pr-10 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm">
-                                @foreach(config('array.printer.section') as $section)
-                                    <option value="{{ $section }}" @selected((old('section') ?? '') === $section)>
-                                        {{ strtoupper($section) }}
-                                    </option>
+                            <select
+                                name="section[]"
+                                id="printerSection"
+                                class="select2 w-full"
+                                data-placeholder="Pilih section printer"
+                                required
+                                multiple
+                            >
+                                @foreach($sections as $section)
+                                    <option value="{{ $section }}">{{ strtoupper($section) }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -233,238 +226,27 @@
 </x-modal>
 
 @push('js')
-    <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
-
     <script>
-        {{--qz.security.setCertificatePromise(function(resolve, reject) {--}}
-        {{--    //Preferred method - from server--}}
-        {{--    return fetch('{{ route('core.qz.cert') }}', {--}}
-        {{--        method: 'GET',--}}
-        {{--        headers: {--}}
-        {{--            'X-CSRF-TOKEN': '{{ csrf_token() }}',--}}
-        {{--            'Content-Type': 'text/plain',--}}
-        {{--        },--}}
-        {{--    })--}}
-        {{-- .then(function(data) {--}}
-        {{--     if (data.ok){--}}
-        {{--         resolve(data.text());--}}
-        {{--     } else {--}}
-        {{--         reject(data.text());--}}
-        {{--     }--}}
-        {{-- });--}}
-
-        {{--});--}}
-
-        {{--qz.security.setSignaturePromise(function(toSign) {--}}
-        {{--    return function(resolve, reject) {--}}
-        {{--        //Preferred method - from server--}}
-        {{--        fetch('{{ route('core.qz.sign') }}', {--}}
-        {{--            method: 'POST',--}}
-        {{--            headers: {--}}
-        {{--                'X-CSRF-TOKEN': '{{ csrf_token() }}',--}}
-        {{--                'Content-Type': 'text/plain',--}}
-        {{--            },--}}
-        {{--            body: toSign--}}
-        {{--        })--}}
-        {{--        .then(function(data) { data.ok ? resolve(data.text()) : reject(data.text()); });--}}
-
-        {{--        //Alternate method - unsigned--}}
-        {{--        resolve(); // remove this line in live environment--}}
-        {{--    };--}}
-        {{--});--}}
-
-        async function connectQZSafe() {
-            if (!qz.websocket.isActive()) {
-                await qz.websocket.connect();
-            }
-        }
-
         document.addEventListener('open-modal', async (e) => {
             if (e.detail !== 'modal-form') return;
 
-            const select = $('#printerSelect');
-            select.empty();
+            const selectPrinter = $('#printerSelect');
+            selectPrinter.empty();
 
-            select.select2({
+            selectPrinter.select2({
                 placeholder: 'Pilih atau ketik nama printer',
                 tags: true,
                 width: '100%'
             });
 
-            if (typeof qz === 'undefined') {
-                console.error('QZ Tray not loaded');
-                return;
-            }
+            const selectSection = $('#printerSection');
 
-            try {
-                await connectQZSafe();
-                console.log('connectQZSafe');
-
-                const printers = await qz.printers.find();
-                console.log('printer')
-
-                printers.forEach(p => {
-                    const option = new Option(p, p, false, false);
-                    select.append(option);
-                });
-
-                console.log('option')
-
-                select.trigger('change');
-
-            } catch (err) {
-                console.error('Gagal load printer:', err);
-            }
-        });
-
-        function resizeImage(url, targetWidth = 384) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.crossOrigin = "Anonymous";
-
-                img.onload = () => {
-                    const ratio = targetWidth / img.width;
-                    const canvas = document.createElement('canvas');
-
-                    canvas.width = targetWidth;
-                    canvas.height = img.height * ratio;
-
-                    const ctx = canvas.getContext('2d');
-                    ctx.fillStyle = '#FFFFFF';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                    resolve(canvas.toDataURL('image/png'));
-                };
-
-                img.src = url;
+            selectSection.select2({
+                placeholder: 'Pilih atau ketik section printer',
+                tags: true,
+                width: '100%'
             });
-        }
-
-        async function printReceipt(payload) {
-            console.log('start');
-            const { printers, esc, logo } = payload;
-            console.log('payload');
-
-            const printer = printers[0];
-            console.log('print');
-
-            // ===============================
-            // CASE 1: QZ TRAY (USB / BT)
-            // ===============================
-            if (printer.connection_type === 'usb') {
-                await connectQZSafe();
-                console.log('qzSafe');
-
-                const width = printer.paper_width === 80 ? 576 : 384;
-                const config = qz.configs.create(printer.device_name);
-                console.log('config');
-
-                // let data = [];
-
-                // if (logo) {
-                //     const img = await resizeImage(logo, width);
-                //     data.push({
-                //         type: 'image',
-                //         format: 'png',
-                //         data: img,
-                //         options: {
-                //             language: 'ESCPOS',
-                //             align: 'center'
-                //         }
-                //     });
-                // }
-
-                const data = [
-                    '\x1B\x40', // INIT
-
-                    // {
-                    //     type: 'image',
-                    //     format: 'jpg',
-                    //     data: logoBase64,
-                    //     options: {
-                    //         language: 'ESCPOS',
-                    //         density: 'double',
-                    //         align: 'center'
-                    //     }
-                    // },
-
-                    'CAMPAGNA POS\n',
-                    'Jl. Contoh No. 123\n',
-                    'Telp: 0812-3456-7890\n',
-                    '------------------------------\n',
-                    'Tanggal : 15-01-2026 14:32\n',
-                    'Kasir   : ADMIN\n',
-                    '------------------------------\n',
-
-                    'Ayam Geprek Original     18.000\n',
-                    'Ayam Geprek Keju         22.000\n',
-                    'Nasi Putih                5.000\n',
-                    'Es Teh Manis              5.000\n',
-                    'Es Jeruk                  6.000\n',
-                    '------------------------------\n',
-
-                    'Subtotal                 56.000\n',
-                    'PPN 10%                   5.600\n',
-                    'Service 5%                2.800\n',
-                    '------------------------------\n',
-
-                    'TOTAL                    64.400\n',
-                    '------------------------------\n',
-
-                    'Bayar Tunai              70.000\n',
-                    'Kembali                   5.600\n',
-                    '------------------------------\n',
-
-                    'Terima kasih atas kunjungan Anda\n',
-                    'Silakan datang kembali\n',
-                    'Campagna POS\n',
-                    '\n',
-                    'Powered by Campagna\n',
-                    '\n\n',
-                    '\x1B\x70\x00\x19\xFA',
-
-                    '\x1D\x56\x00' // CUT
-                ];
-                console.log('data');
-
-                try {
-                    console.log('start print');
-                    console.log(config, data);
-                    await qz.print(config, data);
-                    console.log('end print');
-                    return { success: true, method: 'usb' };
-                } catch (e) {
-                    console.error('QZ PRINT ERROR:', e);
-                    throw e;
-                }
-            }
-
-            // ===============================
-            // CASE 2: LAN PRINTER (IP)
-            // ===============================
-            if (printer.connection_type === 'lan') {
-
-                // LAN PRINT HARUS lewat backend
-                const res = await fetch(`{{ route('core.printer.print-test', ':id') }}`.replace(':id', printer.id), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                });
-
-                const json = await res.json();
-
-                if (!json.success) {
-                    throw new Error(json.message || 'LAN print failed');
-                }
-
-                return { success: true, method: 'lan' };
-            }
-
-            throw new Error('Unknown printer connection type');
-        }
+        });
 
         function togglePrinterStatus(el, url) {
             fetch(url, {
