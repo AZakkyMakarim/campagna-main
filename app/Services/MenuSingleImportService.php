@@ -57,7 +57,7 @@ class MenuSingleImportService
                     continue;
                 }
 
-                if (!in_array($kategori, ['makanan', 'minuman'])) {
+                if (!in_array($kategori, ['makanan', 'minuman', 'roti', 'snack', 'jajan pasar', 'nasi', 'wedangan', 'jede', 'packaging'])) {
                     $errors++;
                     $messages[] = "Menu '{$namaMenu}': Kategori harus 'makanan' atau 'minuman', dapat '{$kategori}'.";
                     continue;
