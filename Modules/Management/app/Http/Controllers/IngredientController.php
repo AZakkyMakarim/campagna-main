@@ -24,9 +24,9 @@ class IngredientController extends Controller
 
         $ingredients = Ingredient::where('business_id', Auth::user()->business_id)->where('outlet_id', active_outlet_id());
 
-        $raws = (clone $ingredients)->where('type', 'raw')->get();
-        $semis = (clone $ingredients)->where('type', 'semi')->get();
-        $finisheds = (clone $ingredients)->where('type', 'finished')->get();
+        $raws = (clone $ingredients)->where('type', 'raw')->paginate(10, ['*'], 'raw_page')->withQueryString();
+        $semis = (clone $ingredients)->where('type', 'semi')->paginate(10, ['*'], 'semi_page')->withQueryString();
+        $finisheds = (clone $ingredients)->where('type', 'finished')->paginate(10, ['*'], 'finished_page')->withQueryString();
 
         return view('management::ingredient.index', compact('units', 'raws', 'semis', 'finisheds'));
     }

@@ -6,7 +6,31 @@
 @section('title', 'Bahan & Resep')
 
 @section('content')
-    <div x-data="{ tab: 'raw' }">
+    <div x-data="{ tab: 'raw' }"
+         x-init="
+             let navType = 'navigate';
+             if (window.performance && window.performance.getEntriesByType) {
+                 const navEntries = window.performance.getEntriesByType('navigation');
+                 if (navEntries.length > 0) {
+                     navType = navEntries[0].type;
+                 }
+             }
+
+             let isSamePage = false;
+             try {
+                 if (document.referrer) {
+                     isSamePage = (new URL(document.referrer)).pathname === window.location.pathname;
+                 }
+             } catch(e) {}
+
+             if (navType === 'reload' || navType === 'back_forward' || isSamePage) {
+                 tab = localStorage.getItem('activeIngredientTab') || 'raw';
+             } else {
+                 tab = 'raw';
+             }
+
+             $watch('tab', value => localStorage.setItem('activeIngredientTab', value));
+         ">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl font-bold text-gray-800">Bahan</h2>
 

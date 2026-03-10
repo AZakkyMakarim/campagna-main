@@ -57,9 +57,9 @@ class MenuSingleImportService
                     continue;
                 }
 
-                if (!in_array($kategori, ['makanan', 'minuman', 'roti', 'snack', 'jajan pasar', 'nasi', 'wedangan', 'jede', 'packaging'])) {
+                if (empty($kategori)) {
                     $errors++;
-                    $messages[] = "Menu '{$namaMenu}': Kategori harus 'makanan' atau 'minuman', dapat '{$kategori}'.";
+                    $messages[] = "Menu '{$namaMenu}': Kategori tidak boleh kosong.";
                     continue;
                 }
 

@@ -6,7 +6,31 @@
 @section('title', 'Stok')
 
 @section('content')
-<div x-data="{ tab: 'stock-card' }">
+<div x-data="{ tab: 'stock-card' }"
+     x-init="
+         let navType = 'navigate';
+         if (window.performance && window.performance.getEntriesByType) {
+             const navEntries = window.performance.getEntriesByType('navigation');
+             if (navEntries.length > 0) {
+                 navType = navEntries[0].type;
+             }
+         }
+
+         let isSamePage = false;
+         try {
+             if (document.referrer) {
+                 isSamePage = (new URL(document.referrer)).pathname === window.location.pathname;
+             }
+         } catch(e) {}
+
+         if (navType === 'reload' || navType === 'back_forward' || isSamePage) {
+             tab = localStorage.getItem('activeStockTab') || 'stock-card';
+         } else {
+             tab = 'stock-card';
+         }
+
+         $watch('tab', value => localStorage.setItem('activeStockTab', value));
+     ">
     <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-gray-800">Stok</h2>
     </div>

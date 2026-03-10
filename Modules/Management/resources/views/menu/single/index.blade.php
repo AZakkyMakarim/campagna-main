@@ -33,7 +33,6 @@
                 <th class="px-4 py-3">Nama Menu</th>
                 <th class="px-4 py-3">SKU</th>
                 <th class="px-4 py-3">Kategori</th>
-                <th class="px-4 py-3">Barcode ID</th>
                 <th class="px-4 py-3">Resep</th>
                 <th class="px-4 py-3">HPP</th>
                 <th class="px-4 py-3">Harga Jual</th>
@@ -47,8 +46,7 @@
                         <td class="px-4 py-3">{{ $key + 1 + (((request('page') ?? 1) - 1) * 10) }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ $menu->name }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ $menu->sku }}</td>
-                        <td class="px-4 py-3 text-nowrap">{{ $menu->category }}</td>
-                        <td class="px-4 py-3 text-nowrap"></td>
+                        <td class="px-4 py-3 text-nowrap">{{ strtoupper($menu->category) }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ count($menu->components) }} Bahan</td>
                         <td class="px-4 py-3 text-nowrap text-orange-600 font-bold">{{ rp_format($menu->calculateHppDynamic()) }}</td>
                         <td class="px-4 py-3 text-nowrap text-green-600 font-bold">{{ rp_format($menu->sell_price) }}</td>
@@ -107,7 +105,7 @@
                                 <li>Kolom wajib: <span class="font-medium bg-blue-100 px-1 rounded">Nama Menu</span>, <span class="font-medium bg-blue-100 px-1 rounded">SKU</span>, <span class="font-medium bg-blue-100 px-1 rounded">Kategori</span>, <span class="font-medium bg-blue-100 px-1 rounded">Harga Jual</span>, <span class="font-medium bg-blue-100 px-1 rounded">Nama Bahan</span>, <span class="font-medium bg-blue-100 px-1 rounded">Tipe Bahan</span>, <span class="font-medium bg-blue-100 px-1 rounded">Qty</span></li>
                                 <li>Satu menu bisa <b>banyak baris</b> (banyak komponen)</li>
                                 <li>Import akan <b>update</b> menu jika SKU sudah ada</li>
-                                <li>Kategori: <b>makanan</b> atau <b>minuman</b>. Tipe Bahan: <b>raw</b> / <b>semi</b> / <b>finished</b></li>
+                                <li>Kategori bebas (contoh: makanan, minuman, snack). Tipe Bahan: <b>raw</b> / <b>semi</b> / <b>finished</b></li>
                             </ul>
                         </div>
                     </div>

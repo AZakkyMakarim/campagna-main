@@ -58,9 +58,9 @@ class MenuBundleImportService
                     continue;
                 }
 
-                if (!in_array($kategori, ['makanan', 'minuman'])) {
+                if (empty($kategori)) {
                     $errors++;
-                    $messages[] = "Paket '{$namaPaket}': Kategori harus 'makanan' atau 'minuman', dapat '{$kategori}'.";
+                    $messages[] = "Paket '{$namaPaket}': Kategori tidak boleh kosong.";
                     continue;
                 }
 
