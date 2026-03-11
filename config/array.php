@@ -27,6 +27,9 @@ return [
             'porsi' => [
                 'symbol' => 'porsi'
             ],
+            'pack' => [
+                'symbol' => 'pack'
+            ]
         ],
     ],
     'order' => [

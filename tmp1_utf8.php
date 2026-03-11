@@ -1,17 +1,14 @@
-<?php
+﻿<?php
 
 namespace Modules\Management\Http\Controllers;
 
-use App\Exports\VendorTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Models\Ingredient;
 use App\Models\Vendor;
 use App\Models\VendorIngredient;
-use App\Services\VendorImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Facades\Excel;
 
 class VendorController extends Controller
 {
@@ -107,37 +104,4 @@ class VendorController extends Controller
      * Remove the specified resource from storage.
      */
     public function destroy($id) {}
-
-    public function import(Request $request, VendorImportService $importService)
-    {
-        $request->validate([
-            'file' => 'required|file|mimes:csv,txt,xlsx,xls',
-        ]);
-
-        $file = $request->file('file');
-        $path = $file->getRealPath();
-        $businessId = Auth::user()->business_id;
-        $outletId = active_outlet_id();
-
-        try {
-            $result = $importService->import($path, $businessId, $outletId);
-
-            if ($result['errors'] > 0) {
-                session()->flash('import_errors_count', $result['errors']);
-                session()->flash('import_success_count', $result['success']);
-                session()->flash('import_errors_messages', $result['messages']);
-            } else {
-                toast("Import berhasil! " . $result['success'] . " vendor ditambahkan/diperbarui.", 'success');
-            }
-        } catch (\Exception $e) {
-            toast("Terjadi kesalahan sistem: " . $e->getMessage(), 'error');
-        }
-
-        return back();
-    }
-
-    public function downloadTemplate()
-    {
-        return Excel::download(new VendorTemplateExport, 'template_import_vendor.xlsx');
-    }
 }

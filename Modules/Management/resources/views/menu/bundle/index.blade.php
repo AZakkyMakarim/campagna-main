@@ -154,11 +154,13 @@
 <x-modal id="modal-form-bundle" title="Tambah Paket" icon="fa-plus" size="7xl">
     <form method="POST"
           action="{{ route('management.purchasing.menu.bundle.store') }}"
-          x-data="bundleForm(@js($menus), @js($ingredients))">
+          x-data="bundleForm(@js($menus), @js($ingredients))"
+          class="flex flex-col max-h-[60vh] overflow-hidden"
+    >
 
         @csrf
 
-        <div class="p-5 space-y-5">
+        <div class="p-5 space-y-5 overflow-y-auto shrink">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 {{-- ================= LEFT : INFO MENU ================= --}}
@@ -230,7 +232,7 @@
                         </div>
 
                         {{-- BODY --}}
-                        <div class="relative max-h-[600px] overflow-y-auto p-4 space-y-3">
+                        <div class="relative overflow-y-auto p-4 space-y-3" style="max-height: 250px;">
 
                             <template x-for="(row, idx) in rows" :key="row.key">
                                 <div class="grid grid-cols-12 gap-3 items-center border rounded-lg p-3">
@@ -328,7 +330,7 @@
             </div>
         </div>
 
-        <div class="flex justify-end gap-3 px-5 py-4 border-t">
+        <div class="flex justify-end gap-3 px-5 py-4 border-t bg-gray-50 shrink-0">
             <button type="button"
                     @click="$dispatch('close-modal')"
                     class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-orange-100 hover:text-orange-500">
@@ -353,10 +355,10 @@
 >
     <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="open=false"></div>
 
-    <div class="relative w-full max-w-7xl bg-white rounded-xl shadow-xl border">
+    <div class="relative w-full max-w-7xl bg-white rounded-xl shadow-xl border flex flex-col max-h-[60vh]">
 
         <!-- HEADER -->
-        <div class="flex items-center justify-between px-5 py-4 border-b">
+        <div class="flex items-center justify-between px-5 py-4 border-b shrink-0 bg-white rounded-t-xl z-10">
             <h3 class="font-semibold text-lg">Edit Menu</h3>
             <button @click="open=false"><i class="fa fa-times"></i></button>
         </div>
@@ -364,10 +366,11 @@
         <form
             method="POST"
             :action="action"
+            class="flex flex-col shrink overflow-hidden"
         >
             @csrf
 
-            <div class="p-5 space-y-5">
+            <div class="p-5 space-y-5 overflow-y-auto shrink">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-2">
                         <div>
@@ -432,7 +435,7 @@
                                 </button>
                             </div>
 
-                            <div class="relative max-h-[600px] overflow-y-auto p-4 space-y-3">
+                            <div class="relative overflow-y-auto p-4 space-y-3" style="max-height: 250px;">
                                 <template x-for="(row, idx) in components" :key="row.key">
                                     <div class="grid grid-cols-12 gap-3 items-center border rounded-lg p-3">
                                         <div class="col-span-12 md:col-span-6">
@@ -517,7 +520,7 @@
                 </div>
             </div>
 
-            <div class="flex justify-end gap-3 px-5 py-4 border-t">
+            <div class="flex justify-end gap-3 px-5 py-4 border-t bg-gray-50 shrink-0 rounded-b-xl z-10">
                 <button type="button"
                         @click="$dispatch('close-modal')"
                         class="px-4 py-2 border rounded-lg">
