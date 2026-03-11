@@ -379,6 +379,7 @@
         }
 
         window.ingredientData = @json($ingredientPayload);
+        window.ingredientGroups = @json($ingredientGroups);
 
         document.addEventListener('DOMContentLoaded', () => {
 
