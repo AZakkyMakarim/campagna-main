@@ -24,19 +24,14 @@ class PurchaseController extends Controller
         $units = Unit::latest()->get();
         $purchases = Purchase::where('outlet_id', active_outlet_id())->latest()->paginate();
         $ingredients = Ingredient::where('outlet_id', active_outlet_id())
-            ->where(function ($query){
-                $query->where('type', 'raw')
-                    ->orWhere(function ($query){
-                        $query->where('type', 'finished')->doesntHave('recipe');
-                    });
-            })
             ->with(['baseUnit', 'unitConversions.toUnit'])
             ->latest()
             ->get()
             ->groupBy(function ($item) {
-                return $item->type === 'raw'
-                    ? 'Bahan Baku'
-                    : 'Produk Jadi';
+                if ($item->type === 'raw') return 'Bahan Baku';
+                if ($item->type === 'semi') return 'Bahan 1/2 Jadi';
+                if ($item->type === 'finished') return 'Bahan Jadi';
+                return 'Lainnya';
             });
 
         $ingredientPayload = [];

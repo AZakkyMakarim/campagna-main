@@ -25,7 +25,7 @@ class ProductionController extends Controller
                 'baseUnit',
                 'recipe.items.ingredient.batches',
                 'recipe.items.unit',
-                'recipe.items.ingredient.stock',
+                'recipe.items.ingredient.ingredientStock',
             ])
             ->where('type', 'semi')
             ->whereHas('recipe')
