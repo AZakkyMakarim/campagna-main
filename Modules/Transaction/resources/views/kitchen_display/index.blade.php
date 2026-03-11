@@ -29,7 +29,7 @@
 
                         <!-- QUEUE -->
                         <div class="bg-orange-600 text-white rounded-lg px-3 py-1.5 shadow-sm">
-                            <span class="text-lg font-bold" x-text="order.queue_number"></span>
+                            <span class="text-lg font-bold" x-text="order.code"></span>
                         </div>
 
                         <!-- TIMER -->
@@ -84,7 +84,7 @@
                 <!-- KIRI -->
                 <h3 class="font-bold text-xl">
                     Antrian:
-                    <span class="text-orange-600" x-text="payload?.queue_number"></span>
+                    <span class="text-orange-600" x-text="payload?.code"></span>
                 </h3>
 
                 <!-- KANAN -->

@@ -14,6 +14,7 @@ class Outlet extends Model
         'business_id',
         'code',
         'name',
+        'phone_number',
         'type',
         'address',
         'opening_hours',

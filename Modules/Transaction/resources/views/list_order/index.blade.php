@@ -28,10 +28,12 @@
                             channel: '{{ config('array.order.channel')[$order->channel]['display_name'] }}',
                             time: '{{ $order->created_at->format('H.i') }}',
                             items: {{ $order->items->map(fn($i) => [
-                                'name' => $i->name_snapshot,
-                                'qty' => $i->qty,
-                                'subtotal' => $i->subtotal,
-                                'note' => $i->note,
+                                'name'      => $i->name_snapshot,
+                                'qty'       => $i->qty,
+                                'subtotal'  => $i->subtotal,
+                                'note'      => $i->note,
+                                'done_qty'  => $i->done_qty,
+                                'void_qty'  => $i->void_qty,
                             ])->values()->toJson() }},
                             adjustments: {{ $order->adjustments->map(fn($a) => [
                                 'type'        => $a->type,
@@ -55,7 +57,7 @@
                         <div class="flex items-center gap-2">
                             <div class="bg-orange-600 text-white rounded-lg px-3 py-1.5">
                                 <span class="text-lg font-bold">
-                                    {{ $order->queue_number }}
+                                    {{ $order->code }}
                                 </span>
                             </div>
                         </div>
@@ -100,7 +102,7 @@
                         @if($order->table_number)
                             <span class="inline-flex items-center rounded-full bg-blue-100 text-blue-700 px-2.5 py-0.5 font-semibold">
                             <i class="fa fa-map-pin mr-1"></i>
-                                Meja {{ $order->table_number }}
+                                Pager {{ $order->table_number }}
                             </span>
                         @endif
 
@@ -175,7 +177,7 @@
 
                 <!-- MEJA -->
                 <div class="rounded-lg border bg-gray-50 p-3">
-                    <p class="text-xs text-gray-500">Meja</p>
+                    <p class="text-xs text-gray-500">Pager</p>
                     <p class="font-semibold" x-text="payload?.table ?? '-'"></p>
                 </div>
 
@@ -213,6 +215,23 @@
                                 <p x-show="item.note" class="text-xs text-gray-500 italic pl-6 mt-1">
                                     • <span x-text="item.note"></span>
                                 </p>
+
+                                <!-- STATUS INFO -->
+                                <div class="flex gap-2 mt-2 text-xs">
+                                    <span
+                                        x-show="item.done_qty > 0"
+                                        class="px-2 py-0.5 rounded bg-green-100 text-green-700"
+                                    >
+                                        Done <span x-text="item.done_qty"></span>
+                                    </span>
+
+                                    <span
+                                        x-show="item.void_qty > 0"
+                                        class="px-2 py-0.5 rounded bg-red-100 text-red-700"
+                                    >
+                                        Void <span x-text="item.void_qty"></span>
+                                    </span>
+                                </div>
                             </div>
 
                             <div class="text-right">

@@ -29,12 +29,18 @@
         <table class="w-full text-sm text-left">
             <thead class="bg-orange-700 text-white uppercase text-xs">
             <tr>
-                <th class="px-4 py-3">#</th>
-                <th class="px-4 py-3">Nama</th>
-                <th class="px-4 py-3">No. Telp</th>
-                <th class="px-4 py-3">Alamat</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3 text-center"><i class="fa fa-spin fa-cog"></i> Aksi</th>
+                <th class="px-4 py-3 border border-gray-200" rowspan="2">#</th>
+                <th class="px-4 py-3 border border-gray-200" rowspan="2">Nama</th>
+                <th class="px-4 py-3 border border-gray-200" rowspan="2">No. Telp</th>
+                <th class="px-4 py-3 border border-gray-200" rowspan="2">Alamat</th>
+                <th class="px-4 py-3 border border-gray-200" colspan="3">Bank</th>
+                <th class="px-4 py-3 border border-gray-200" rowspan="3">Status</th>
+                <th class="px-4 py-3 border border-gray-200 text-center" rowspan="2"><i class="fa fa-spin fa-cog"></i> Aksi</th>
+            </tr>
+            <tr>
+                <th class="px-4 py-3 border border-gray-200">Nama</th>
+                <th class="px-4 py-3 border border-gray-200">Nomor Rekening</th>
+                <th class="px-4 py-3 border border-gray-200">Pemilik Rekening</th>
             </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
@@ -44,6 +50,9 @@
                         <td class="px-4 py-3 text-nowrap">{{ $vendor->name }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ $vendor->phone_number }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ $vendor->address }}</td>
+                        <td class="px-4 py-3 text-nowrap">{{ $vendor->bank_name }}</td>
+                        <td class="px-4 py-3 text-nowrap">{{ $vendor->bank_account_number }}</td>
+                        <td class="px-4 py-3 text-nowrap">{{ $vendor->bank_account_name }}</td>
                         <td class="px-4 py-3">
                             <label class="inline-flex items-center cursor-pointer">
                                 <input
@@ -171,12 +180,12 @@
                     <label class="block text-sm font-bold text-gray-700 mb-2">No Telp <span class="text-red-500">*</span></label>
                     <input type="text" name="phone_number" value="{{ old('phone_number') }}" required placeholder="Contoh: 08123456789" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
                             </div>
-                        
+
                 <div class="md:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Alamat Vendor</label>
                     <textarea name="address" placeholder="Tuliskan alamat lengkap..." rows="2" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white resize-none transition-all">{{ old('address') }}</textarea>
                 </div>
-                
+
                 <div class="md:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Link Google Maps</label>
                     <input type="text" name="link_maps" value="{{ old('link_maps') }}" placeholder="Tempel URL Maps disini..." class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
@@ -192,16 +201,16 @@
                     <select name="bank_name" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
                         <option value="">Pilih Bank...</option>
                         @foreach(config('array.banks', []) as $bank)
-                            <option value="{{ $bank }}" @selected(old('bank_name') == $bank)>{{ $bank }}</option>
+                            <option value="{{ $bank['name'] }}" @selected(old('bank_name') == $bank)>{{ $bank['name'] }}</option>
                         @endforeach
                     </select>
                 </div>
-                
+
                 <div class="md:col-span-1">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Nomor Rekening</label>
                     <input type="text" name="bank_account_number" value="{{ old('bank_account_number') }}" placeholder="Contoh: 1234567890" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
                 </div>
-                
+
                 <div class="md:col-span-1">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Nama Penerima</label>
                     <input type="text" name="bank_account_name" value="{{ old('bank_account_name') }}" placeholder="Atas Nama (A/N)" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
@@ -289,12 +298,12 @@
                             <label class="block text-sm font-bold text-gray-700 mb-2">Nama Bank</label>
                             <select name="bank_name" x-model="form.bank_name" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">
                                 <option value="">Pilih Bank...</option>
-                                @foreach(config('array.banks', []) as $bank)
-                                    <option value="{{ $bank }}">{{ $bank }}</option>
+                                @foreach(config('array.banks', []) as $key => $bank)
+                                    <option value="{{ $bank['name'] }}">{{ $bank['name'] }}</option>
                                 @endforeach
                             </select>
                                     </div>
-                                
+
                         <div class="md:col-span-1">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Nomor Rekening</label>
                             <input type="text" name="bank_account_number" x-model="form.bank_account_number" placeholder="Contoh: 1234567890" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white transition-all">

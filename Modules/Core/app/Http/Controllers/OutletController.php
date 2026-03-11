@@ -71,6 +71,7 @@ class OutletController extends Controller
             'business_id'   => $business->id,
             'code'          => $request->code,
             'name'          => $request->name,
+            'phone_number'  => $request->phone_number,
             'type'          => $request->type,
             'address'       => $request->address,
             'opening_hours' => $request->opening_hours,
