@@ -59,7 +59,7 @@
 <x-modal id="modal-form-purchase" title="Tambah Pembelian" icon="fa-plus" size="5xl">
     <form method="POST" action="{{ route('management.purchasing.purchase.store') }}" enctype="multipart/form-data">
         @csrf
-        <div class="p-5 text-gray-300">
+        <div class="p-5 text-gray-300 max-h-[60vh] overflow-y-auto">
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-2">Vendor</label>
@@ -230,8 +230,9 @@
                 </button>
 
                 <button
+                    id="btnSubmit"
                     type="submit"
-                    class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-500">
+                    class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-500 disabled:bg-gray-400 disabled:cursor-not-allowed">
                     Simpan
                 </button>
             </div>
@@ -379,7 +380,7 @@
         }
 
         window.ingredientData = @json($ingredientPayload);
-        window.ingredientGroups = @json($ingredientGroups);
+        window.ingredientGroups = @json($ingredients);
 
         document.addEventListener('DOMContentLoaded', () => {
 
@@ -397,8 +398,35 @@
                 initSelect2($(this));
             });
 
-            // Populate baris pertama
-            populateIngredientSelect($('select[name="items[0][ingredient_id]"]'), window.ingredientGroups);
+            /** ===============================
+             * SUBMIT CONDITIONAL
+             * =============================== */
+             const vendorSelect = $('select[name="vendor_id"]');
+            
+             function toggleSubmitState() {
+                 const hasVendor = !!vendorSelect.val();
+                 let allIngredientsSelected = true;
+ 
+                 $('.ingredient-select').each(function() {
+                     if (!$(this).val()) {
+                         allIngredientsSelected = false;
+                         return false; // break loop
+                     }
+                 });
+ 
+                 const isValid = hasVendor && allIngredientsSelected && $('.ingredient-select').length > 0;
+                 $('#btnSubmit').prop('disabled', !isValid);
+             }
+ 
+             vendorSelect.on('change', function() {
+                 toggleSubmitState();
+             });
+ 
+             // Populate baris pertama
+             populateIngredientSelect($('select[name="items[0][ingredient_id]"]'), window.ingredientGroups);
+ 
+             // Initial state
+             toggleSubmitState();
 
             /** ===============================
              * ADD ROW
@@ -499,6 +527,8 @@
                     window.ingredientGroups
                 );
 
+                toggleSubmitState();
+
                 itemIndex++;
             });
 
@@ -507,6 +537,7 @@
              * =============================== */
             $(document).on('click', '.remove-item', function () {
                 $(this).closest('.purchase-item').remove();
+                toggleSubmitState();
             });
 
             /** ===============================
@@ -581,9 +612,13 @@
                 }
 
                 const ingredient = window.ingredientData[ingredientId];
-                if (!ingredient) return;
+                if (!ingredient) {
+                    toggleSubmitState();
+                    return;
+                }
 
                 populateUnitSelect(row, ingredient);
+                toggleSubmitState();
             });
 
             $('.select2').select2({

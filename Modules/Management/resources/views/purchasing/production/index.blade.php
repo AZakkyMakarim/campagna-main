@@ -92,7 +92,7 @@
 
                 <div class="space-y-4">
                     <!-- RECIPE ITEMS -->
-                    <div x-show="recipe" class="border rounded-lg divide-y">
+                    <div x-show="recipe" class="border rounded-lg divide-y max-h-[320px] overflow-y-auto">
                         <div class="px-4 py-2 bg-gray-100 font-semibold text-sm">
                             Bahan yang Dibutuhkan
                         </div>
@@ -225,7 +225,7 @@
                         const ing = item.ingredient;
 
                         const unitCost = Number(ing?.stock?.avg_cost || 0);
-                        const stock = Number(ing?.stock?.qty || 0);
+                        const stock = Number(ing?.stock || 0);
                         const baseQty = Number(item.quantity || 0);
 
                         return {

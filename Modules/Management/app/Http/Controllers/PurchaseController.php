@@ -59,7 +59,9 @@ class PurchaseController extends Controller
             ];
         }
 
-        $vendors = Vendor::where('business_id', Auth::user()->business_id)->get();
+        $vendors = Vendor::where('business_id', Auth::user()->business_id)
+            ->where('is_active', 1)
+            ->get();
 
         return view('management::purchasing.purchase.index', compact('ingredients', 'ingredientPayload', 'purchases', 'vendors', 'units'));
     }
@@ -111,6 +113,7 @@ class PurchaseController extends Controller
                 'outlet_id'   => active_outlet_id(),
                 'business_id' => auth()->user()->business_id,
                 'total_cost'  => collect($request->items)->sum('cost'),
+                'description' => $request->description,
                 'purchased_at'=> now(),
                 'created_by'  => auth()->id(),
             ]);
