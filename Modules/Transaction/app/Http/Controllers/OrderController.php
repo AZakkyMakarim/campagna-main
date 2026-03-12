@@ -6,6 +6,7 @@ use App\Events\OrderCreated;
 use App\Http\Controllers\Controller;
 use App\Jobs\PrintReceiptJob;
 use App\Models\Ingredient;
+use App\Models\IngredientBatch;
 use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderAdjustment;
@@ -15,11 +16,13 @@ use App\Models\Payment;
 use App\Models\Printer;
 use App\Models\Recipe;
 use App\Models\Setting;
+use App\Models\StockMovement;
 use App\Models\TaxRule;
 use App\Services\PrinterService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 
 class OrderController extends Controller
@@ -33,17 +36,17 @@ class OrderController extends Controller
 
         $outlet = Outlet::findOrFail($outletId);
 
-        $categories = [
-            'makanan' => 'Makanan',
-            'minuman' => 'Minuman',
-        ];
+        $raw = Menu::query()
+            ->where('outlet_id', $outletId)
+            ->where('is_active', true);
+
+
+        $categories = (clone $raw)->pluck('category')->unique();
 
         // =========================
         // MENU LIST (READY JUAL)
         // =========================
-        $menus = Menu::query()
-            ->where('outlet_id', $outletId)
-            ->where('is_active', true)
+        $menus = (clone $raw)
             ->orderBy('category')
             ->orderBy('name')
             ->get();
@@ -159,6 +162,7 @@ class OrderController extends Controller
             // CREATE ORDER
             // =========================
             $prefixOrder = (clone $settings)->where('name', 'prefix queue')->first();
+            $prefixCode = (clone $settings)->where('name', 'prefix transaction')->first();
             $resetTransaction = (clone $settings)->where('name', 'reset transaction')->first();
 
             if ($resetTransaction == 'harian'){
@@ -173,10 +177,11 @@ class OrderController extends Controller
                 'cashier_id'        => $user->id,
                 'customer_name'     => $isDraft ? $request->customer_name : null,
                 'customer_phone'    => $isDraft ? $request->customer_phone : null,
-                'code'              => 'ORD-' . strtoupper(uniqid()),
+                'code'              => $prefixCode->value . now()->format('Ym') . '-' . strtoupper(Str::random(4)),
                 'queue_number'      => $prefixOrder->value . str_pad($orderCount, 3, '0', STR_PAD_LEFT),
                 'type'              => $request->type,
                 'channel'           => $request->channel,
+                'table_number'      => $request->table_number,
                 'status'            => $orderStatus,
                 'payment_status'    => $paymentStatus,
                 'sub_total'         => $subTotal,
@@ -237,7 +242,7 @@ class OrderController extends Controller
             // PAYMENT
             // =========================
             if ($paymentType === 'PAY') {
-//                $this->consumeStockFromOrder($order);
+                $this->consumeStockFromOrder($order);
 
                 Payment::create([
                     'payable_type'  => Order::class,
@@ -254,7 +259,7 @@ class OrderController extends Controller
 
             broadcast(new OrderCreated($order->load('items')));
 
-            $this->printOrderKitchenV2($order);
+            $this->printOrderKitchen($order);
             return response()->json([
                 'success' => true,
                 'order' => $order->load('items'),
@@ -301,7 +306,7 @@ class OrderController extends Controller
             } elseif ($target instanceof Recipe) {
                 $this->consumeRecipe($target, $needQty);
             } elseif ($target instanceof Ingredient) {
-                $this->consumeIngredient($target, $needQty, $menu->name);
+                $this->consumeIngredient($target, $needQty, $menu);
             }
         }
     }
@@ -318,94 +323,78 @@ class OrderController extends Controller
             $this->consumeIngredient(
                 $item->ingredient,
                 $needQty,
-                $recipe->name
+                $recipe
             );
         }
     }
 
-    protected function consumeIngredient(\App\Models\Ingredient $ingredient, int|float $needQty, string $fromName)
+    protected function consumeIngredient(Ingredient $ingredient, float $needQty, $model)
     {
-        // Lock row biar aman di concurrent order
-        $ingredient = \App\Models\Ingredient::where('id', $ingredient->id)
+        $remaining = $needQty;
+
+        $batches = IngredientBatch::where('ingredient_id', $ingredient->id)
+            ->where('outlet_id', active_outlet_id())
+            ->where('qty_remaining', '>', 0)
+            ->orderBy('received_at') // FIFO
             ->lockForUpdate()
-            ->first();
+            ->get();
 
-        if ($ingredient->stock < $needQty) {
-            throw new \Exception("Stok {$ingredient->name} tidak cukup untuk {$fromName}");
+        foreach ($batches as $batch) {
+
+            if ($remaining <= 0) break;
+
+            $take = min($batch->qty_remaining, $remaining);
+
+            $batch->decrement('qty_remaining', $take);
+
+            StockMovement::create([
+                'movementable_type' => get_class($model),
+                'movementable_id'   => (int) $model->id,
+                'business_id'       => auth()->user()->business_id ?? null,
+                'ingredient_id'     => $ingredient->id,
+                'batch_id'          => $batch->id,
+                'outlet_id'         => active_outlet_id(),
+                'code'              => uniqid('USE-'),
+                'type'              => 'OUT',
+                'qty'               => $take,
+                'cost_per_unit'     => $batch->cost_per_unit,
+                'user_id'           => auth()->id(),
+            ]);
+
+            $remaining -= $take;
         }
 
-        $ingredient->decrement('stock', $needQty);
+        // jika FIFO tidak cukup → buat negative batch
+        if ($remaining > 0) {
 
-        // Optional: simpan log pergerakan stok
-        // StockMovement::create([...]);
-    }
+            $negativeBatch = IngredientBatch::create([
+                'code'          => uniqid('USE-'),
+                'ingredient_id' => $ingredient->id,
+                'outlet_id'     => active_outlet_id(),
+                'qty_in'        => 0,
+                'qty_remaining' => -$remaining,
+                'cost_per_unit' => 0,
+                'source'        => 'auto_negative',
+                'received_at'   => now(),
+            ]);
 
-    private function printOrderKitchen($order){
-        $printers = Printer::where('outlet_id', active_outlet_id())->where('role', 'kitchen')->get();
-
-        foreach ($printers as $printer) {
-            try {
-                // kasih timeout biar ga nge-hang
-                $connector = new NetworkPrintConnector($printer->ip_address, $printer->port, 5);
-                $escpos = new \Mike42\Escpos\Printer($connector);
-
-                $escpos->initialize();
-                $escpos->setJustification(\Mike42\Escpos\Printer::JUSTIFY_CENTER);
-                $escpos->setEmphasis(true);
-                $escpos->setTextSize(2, 2);
-                $escpos->text("KITCHEN ORDER\n");
-                $escpos->setTextSize(1, 1);
-                $escpos->setEmphasis(false);
-                $escpos->text("--------------------------------\n");
-
-                $escpos->setJustification(\Mike42\Escpos\Printer::JUSTIFY_LEFT);
-                $escpos->text("ANTRIAN : " . $order->queue_number . "\n");
-                $escpos->text("ORDER   : " . $order->code . "\n");
-                if ($order->table_number) {
-                    $escpos->text("MEJA    : " . $order->table_number . "\n");
-                }
-                $escpos->text("WAKTU   : " . now()->format('d/m/Y H:i') . "\n");
-                $escpos->text("--------------------------------\n\n");
-
-                foreach ($order->items as $item) {
-                    $escpos->setEmphasis(true);
-                    $escpos->setTextSize(2, 2);
-                    $escpos->text($item->qty . "x " . strtoupper($item->name_snapshot) . "\n");
-                    $escpos->setTextSize(1, 1);
-                    $escpos->setEmphasis(false);
-
-                    if (!empty($item->note)) {
-                        $escpos->text("  - " . $item->note . "\n");
-                    }
-
-                    $escpos->feed(1);
-                }
-
-                if (!empty($order->note)) {
-                    $escpos->text("--------------------------------\n");
-                    $escpos->setEmphasis(true);
-                    $escpos->text("CATATAN:\n");
-                    $escpos->setEmphasis(false);
-                    $escpos->text($order->note . "\n");
-                }
-
-                $escpos->cut();
-                $escpos->close();
-
-            } catch (\Throwable $e) {
-                // ❗ Jangan bikin order gagal gara-gara printer
-                Log::error("Kitchen printer failed: {$printer->ip_address}:{$printer->port}", [
-                    'printer_id' => $printer->id,
-                    'error' => $e->getMessage(),
-                ]);
-
-                // lanjut ke printer berikutnya
-                continue;
-            }
+            StockMovement::create([
+                'movementable_type' => get_class($model),
+                'movementable_id'   => (int) $model->id,
+                'business_id'       => auth()->user()->business_id ?? null,
+                'ingredient_id'     => $ingredient->id,
+                'batch_id'          => $negativeBatch->id,
+                'outlet_id'         => active_outlet_id(),
+                'code'              => uniqid('USE-'),
+                'type'              => 'OUT',
+                'qty'               => $remaining,
+                'cost_per_unit'     => 0,
+                'user_id'           => auth()->id(),
+            ]);
         }
     }
 
-    private function printOrderKitchenV2($order)
+    private function printOrderKitchen($order)
     {
         $servicePrinter = new PrinterService();
 
@@ -417,7 +406,24 @@ class OrderController extends Controller
 
         foreach ($printers as $printer) {
 
-            $sections = $printer->section ?? [];
+            // === printer kasir ===
+            if ($printer->role === 'cashier') {
+
+                $data = [
+                    'role'                      => $printer->role,
+                    'printer_connection_type'   => $printer->connection_type,
+                    'printer_ip'                => $printer->ip_address,
+                    'printer_port'              => $printer->port,
+                    'order'                     => $order,
+                    'items'                     => $order->items,
+                ];
+
+                $servicePrinter->print($data);
+                continue;
+            }
+
+            // === printer dapur/bar ===
+            $sections = json_decode($printer->section) ?? [];
 
             $items = $order->items->filter(function ($item) use ($sections) {
                 return in_array($item->menu->category, $sections);

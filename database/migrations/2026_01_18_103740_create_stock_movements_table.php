@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('ingredient_id');
             $table->integer('batch_id');
             $table->integer('outlet_id');
-            $table->string('code')->nullable();
+//            $table->string('code')->nullable();
             $table->string('type');
             $table->decimal('qty')->default(0);
             $table->decimal('cost_per_unit')->default(0);

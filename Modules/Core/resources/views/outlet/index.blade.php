@@ -102,21 +102,17 @@
 
                     <!-- Tipe Outlet -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tipe Outlet</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Telp</label>
                         <div class="relative">
-                            <select name="type" class="w-full appearance-none p-2 pr-10 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm">
-                                <option value="" class="text-gray-400">
-                                    Pilih jenis usaha
-                                </option>
-
-                                @foreach(['Angkringan', 'Restoran', 'Hybrid'] as $type)
-                                    <option value="{{ $type }}" @selected((old('type') ?? '') === $type)>
-                                        {{ $type }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <input
+                                type="text"
+                                name="phone_number"
+                                placeholder="Masukkan Nomor Telp"
+                                class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
+                            >
                         </div>
                     </div>
+
 
                     <!-- Jam Buka -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -163,18 +159,6 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Nomor Antrian -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Format Nomor Antrian (Prefix)</label>
-                        <input
-                            type="text"
-                            name="queue_number"
-                            placeholder="Masukkan nomor antrian"
-                            class="w-full text-gray-700 px-3 py-2 mb-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
-                        >
-                        <small class="text-gray-600 text-xs">Contoh : ANT-</small>
                     </div>
 
                     <!-- Pengaturan Shift Kasir -->
@@ -285,18 +269,15 @@
 
                             <!-- Tipe Outlet -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Tipe Outlet</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Telp</label>
                                 <div class="relative">
-                                    <select
-                                        name="type"
-                                        x-model="form.type"
-                                        class="w-full appearance-none p-2 pr-10 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm"
+                                    <input
+                                        type="text"
+                                        name="phone_number"
+                                        x-model="form.phone_number"
+                                        placeholder="Masukkan Nomor Telp"
+                                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
                                     >
-                                        <option value="" class="text-gray-400">Pilih jenis usaha</option>
-                                        @foreach(['Angkringan', 'Restoran', 'Hybrid'] as $type)
-                                            <option value="{{ $type }}">{{ $type }}</option>
-                                        @endforeach
-                                    </select>
                                 </div>
                             </div>
 
@@ -357,19 +338,6 @@
                                         </select>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Nomor Antrian -->
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Format Nomor Antrian (Prefix)</label>
-                                <input
-                                    type="text"
-                                    name="queue_number"
-                                    x-model="form.queue_number"
-                                    placeholder="Masukkan nomor antrian"
-                                    class="w-full text-gray-700 px-3 py-2 mb-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
-                                >
-                                <small class="text-gray-600 text-xs">Contoh : ANT-</small>
                             </div>
 
                             <!-- Pengaturan Shift Kasir -->
@@ -496,6 +464,7 @@
 
                     this.form = {
                         name: outlet.name,
+                        phone_number: outlet.phone_number,
                         code: outlet.code,
                         address: outlet.address,
                         type: outlet.type,

@@ -10,59 +10,6 @@
         x-data="orderCart()"
         @add-to-cart.window="addMenu($event.detail)"
     >
-
-        {{-- ORDER META --}}
-{{--        <div class="bg-white rounded-xl border p-4 mb-4">--}}
-{{--            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">--}}
-
-{{--                --}}{{-- TIPE PESANAN --}}
-{{--                <div>--}}
-{{--                    <label class="block text-xs font-semibold text-gray-600 mb-1">--}}
-{{--                        Tipe Pesanan--}}
-{{--                    </label>--}}
-{{--                    <select--}}
-{{--                        x-model="orderType"--}}
-{{--                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"--}}
-{{--                    >--}}
-{{--                        <option value="">Tipe Pesanan</option>--}}
-{{--                        @foreach(config('array.order.type') as $key => $type)--}}
-{{--                            <option value="{{ $key }}">{{ $type['display_name'] }}</option>--}}
-{{--                        @endforeach--}}
-{{--                    </select>--}}
-{{--                </div>--}}
-
-{{--                --}}{{-- JENIS ORDER --}}
-{{--                <div>--}}
-{{--                    <label class="block text-xs font-semibold text-gray-600 mb-1">--}}
-{{--                        Jenis Order--}}
-{{--                    </label>--}}
-{{--                    <select--}}
-{{--                        x-model="orderChannel"--}}
-{{--                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"--}}
-{{--                    >--}}
-{{--                        <option value="">Jenis Order</option>--}}
-{{--                        @foreach(config('array.order.channel') as $key => $channel)--}}
-{{--                            <option value="{{ $key }}">{{ $channel['display_name'] }}</option>--}}
-{{--                        @endforeach--}}
-{{--                    </select>--}}
-{{--                </div>--}}
-
-{{--                --}}{{-- NOMOR MEJA (DINE IN) --}}
-{{--                <div>--}}
-{{--                    <label class="block text-xs font-semibold text-gray-600 mb-1">--}}
-{{--                        Nomor Meja--}}
-{{--                    </label>--}}
-{{--                    <input--}}
-{{--                        type="text"--}}
-{{--                        x-model="tableNumber"--}}
-{{--                        placeholder="Contoh: A1 / 5 / VIP"--}}
-{{--                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"--}}
-{{--                    >--}}
-{{--                </div>--}}
-
-{{--            </div>--}}
-{{--        </div>--}}
-
         <div class="grid grid-cols-12 gap-4">
             {{-- LEFT : MENU LIST --}}
             <div x-data="menuSearch({{ $menus->toJson() }})" class="col-span-8 space-y-4">
@@ -73,14 +20,22 @@
                         type="text"
                         placeholder="Cari menu / SKU…"
                         x-model="search"
+                        @focus="setActiveInput($event.target)"
                         @keydown.enter.prevent="enterAdd()"
                         class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
                     >
 
-                    <select class="border rounded-lg px-3 py-2">
-                        <option>Semua</option>
-                        @foreach($categories as $key => $label)
-                            <option value="{{ $key }}">{{ $label }}</option>
+                    <select
+                        x-model="category"
+                        @change="search=''"
+                        class="border rounded-lg px-3 py-2"
+                    >
+                        <option value="">Semua</option>
+
+                        @foreach($categories as $category)
+                            <option value="{{ $category }}">
+                                {{ strtoupper($category) }}
+                            </option>
                         @endforeach
                     </select>
 
@@ -95,121 +50,47 @@
                 </div>
 
                 {{-- MENU GRID --}}
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <template x-for="menu in filteredMenus" :key="menu.id">
-                        <button
-                            type="button"
-                            @click="addMenu(menu)"
-                            class="relative group border rounded-lg overflow-hidden hover:bg-orange-100 bg-white transition text-left"
+                <div class="max-h-[75vh] overflow-y-auto pr-2 scroll-smooth">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <template x-for="menu in filteredMenus" :key="menu.id">
+                            <button
+                                type="button"
+                                @click="addMenu(menu)"
+                                class="relative group border rounded-lg overflow-hidden hover:bg-orange-100 bg-white transition text-left"
+                            >
+                                <!-- IMAGE -->
+                                <div class="h-28 bg-gray-100 flex items-center justify-center">
+                                    <img
+                                        :src="menu.image_url || '/images/placeholder.png'"
+                                        class="object-cover w-full h-full"
+                                    >
+                                </div>
+
+                                <!-- CONTENT -->
+                                <div class="p-3 space-y-1">
+                                    <p class="text-[11px] text-gray-400 uppercase tracking-wide"
+                                       x-text="menu.sku"></p>
+
+                                    <p class="font-semibold text-gray-800 leading-tight line-clamp-2 min-h-[2.5rem]"
+                                       x-text="menu.name"></p>
+
+                                    <p class="text-sm font-bold text-orange-600"
+                                       x-text="formatRp(menu.sell_price)"></p>
+                                </div>
+
+                                <div class="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200">
+                                    <i class="fa fa-plus text-xs"></i>
+                                </div>
+                            </button>
+                        </template>
+
+                        <!-- EMPTY STATE -->
+                        <div
+                            x-show="filteredMenus.length === 0"
+                            class="col-span-full text-center py-10 text-gray-400"
                         >
-                            <!-- IMAGE -->
-                            <div class="h-28 bg-gray-100 flex items-center justify-center">
-                                <img
-                                    :src="menu.image_url || '/images/placeholder.png'"
-                                    class="object-cover w-full h-full"
-                                >
-                            </div>
-
-                            <!-- CONTENT -->
-                            <div class="p-3 space-y-1">
-                                <p class="text-[11px] text-gray-400 uppercase tracking-wide"
-                                   x-text="menu.sku"></p>
-
-                                <p class="font-semibold text-gray-800 leading-tight line-clamp-2 min-h-[2.5rem]"
-                                   x-text="menu.name"></p>
-
-                                <p class="text-sm font-bold text-orange-600"
-                                   x-text="formatRp(menu.sell_price)"></p>
-                            </div>
-
-                            <div class="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200">
-                                <i class="fa fa-plus text-xs"></i>
-                            </div>
-                        </button>
-                    </template>
-
-                    <!-- EMPTY STATE -->
-                    <div
-                        x-show="filteredMenus.length === 0"
-                        class="col-span-full text-center py-10 text-gray-400"
-                    >
-                        Menu tidak ditemukan
-                    </div>
-            </div>
-
-                <!-- KEYBOARD WRAPPER -->
-                <div
-                    x-show="keyboardOpen"
-                    x-transition
-                    class="bg-white rounded-xl border p-4"
-                >
-                    <div class="space-y-3 text-center">
-
-                        <!-- ROW 1: 1-0 -->
-                        <div class="grid grid-cols-10 gap-2">
-                            <template x-for="key in ['1','2','3','4','5','6','7','8','9','0']">
-                                <button
-                                    @click="pressKey(key)"
-                                    class="key-btn w-full"
-                                    x-text="key"
-                                ></button>
-                            </template>
+                            Menu tidak ditemukan
                         </div>
-
-                        <!-- ROW 2: Q-P -->
-                        <div class="grid grid-cols-10 gap-2">
-                            <template x-for="key in ['Q','W','E','R','T','Y','U','I','O','P']">
-                                <button
-                                    @click="pressKey(key)"
-                                    class="key-btn w-full"
-                                    x-text="key"
-                                ></button>
-                            </template>
-                        </div>
-
-                        <!-- ROW 3: A-L (9 tombol, center) -->
-                        <div class="grid grid-cols-11 gap-2 justify-center">
-                            <!-- spacer kiri -->
-                            <div></div>
-
-                            <template x-for="key in ['A','S','D','F','G','H','J','K','L']">
-                                <button
-                                    @click="pressKey(key)"
-                                    class="key-btn w-full"
-                                    x-text="key"
-                                ></button>
-                            </template>
-
-                            <!-- spacer kanan -->
-                            <div></div>
-                        </div>
-
-                        <!-- ROW 4: Z-M (7 tombol, center) -->
-                        <div class="grid grid-cols-11 gap-2 justify-center">
-                            <!-- spacer kiri -->
-                            <div></div>
-                            <div></div>
-
-                            <template x-for="key in ['Z','X','C','V','B','N','M']">
-                                <button
-                                    @click="pressKey(key)"
-                                    class="key-btn w-full"
-                                    x-text="key"
-                                ></button>
-                            </template>
-
-                            <!-- spacer kanan -->
-                            <div></div>
-                            <div></div>
-                        </div>
-
-                        <!-- ROW 5: ACTIONS -->
-                        <div class="grid grid-cols-10 gap-2">
-                            <button @click="clearSearch()" class="key-btn col-span-2">CLR</button>
-                            <button @click="pressKey(' ')" class="key-btn col-span-6">Space</button>
-                            <button @click="backspace()" class="key-btn col-span-2">⌫</button>
-                        </div>
-
                     </div>
                 </div>
             </div>
@@ -242,71 +123,74 @@
                             </template>
 
                             <!-- CART ITEMS -->
-                            <template x-for="(item, index) in cart" :key="item.menu_id">
-                                <div
-                                    class="p-3 rounded-lg border hover:bg-orange-50 transition space-y-2"
-                                >
+                            <div class="max-h-[52vh] overflow-y-auto pr-2 scroll-smooth">
+                                <template x-for="(item, index) in cart" :key="item.menu_id">
+                                    <div
+                                        class="p-3 rounded-lg border hover:bg-orange-50 transition space-y-2"
+                                    >
 
-                                    <!-- ROW ATAS: NAMA & HARGA -->
-                                    <div class="flex items-start justify-between">
-                                        <div>
-                                            <p class="font-semibold text-gray-800" x-text="item.name"></p>
-                                            <p class="text-xs text-gray-500"
-                                               x-text="formatRp(item.price)">
-                                            </p>
-                                        </div>
+                                        <!-- ROW ATAS: NAMA & HARGA -->
+                                        <div class="flex items-start justify-between">
+                                            <div>
+                                                <p class="font-semibold text-gray-800" x-text="item.name"></p>
+                                                <p class="text-xs text-gray-500"
+                                                   x-text="formatRp(item.price)">
+                                                </p>
+                                            </div>
 
-                                        <!-- HAPUS -->
-                                        <button
-                                            type="button"
-                                            @click="removeItem(index)"
-                                            class="w-8 h-8 rounded-full flex items-center justify-center text-red-500 bg-red-100 hover:bg-red-500 hover:text-white transition"
-                                        >
-                                            <i class="fa fa-trash text-xs"></i>
-                                        </button>
-                                    </div>
-
-                                    <!-- ROW BAWAH: QTY & SUBTOTAL -->
-                                    <div class="flex items-center justify-between">
-                                        <!-- QTY CONTROL -->
-                                        <div class="flex items-center gap-2">
+                                            <!-- HAPUS -->
                                             <button
                                                 type="button"
-                                                @click="updateQty(index, item.qty - 1)"
-                                                class="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-orange-500 hover:text-white transition"
+                                                @click="removeItem(index)"
+                                                class="w-8 h-8 rounded-full flex items-center justify-center text-red-500 bg-red-100 hover:bg-red-500 hover:text-white transition"
                                             >
-                                                −
-                                            </button>
-
-                                            <span class="w-8 text-center font-semibold"
-                                                  x-text="item.qty"></span>
-
-                                            <button
-                                                type="button"
-                                                @click="updateQty(index, item.qty + 1)"
-                                                class="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-orange-500 hover:text-white transition"
-                                            >
-                                                +
+                                                <i class="fa fa-trash text-xs"></i>
                                             </button>
                                         </div>
 
-                                        <!-- SUBTOTAL -->
-                                        <div class="text-right font-bold text-orange-600"
-                                             x-text="formatRp(item.subtotal)">
+                                        <!-- ROW BAWAH: QTY & SUBTOTAL -->
+                                        <div class="flex items-center justify-between">
+                                            <!-- QTY CONTROL -->
+                                            <div class="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    @click="updateQty(index, item.qty - 1)"
+                                                    class="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-orange-500 hover:text-white transition"
+                                                >
+                                                    −
+                                                </button>
+
+                                                <span class="w-8 text-center font-semibold"
+                                                      x-text="item.qty"></span>
+
+                                                <button
+                                                    type="button"
+                                                    @click="updateQty(index, item.qty + 1)"
+                                                    class="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-orange-500 hover:text-white transition"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+
+                                            <!-- SUBTOTAL -->
+                                            <div class="text-right font-bold text-orange-600"
+                                                 x-text="formatRp(item.subtotal)">
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div class="mt-1">
-                                        <input
-                                            type="text"
-                                            placeholder="Catatan (opsional)"
-                                            x-model="item.note"
-                                            class="w-full text-xs border rounded-md px-2 py-1 focus:ring-1 focus:ring-orange-400 focus:outline-none"
-                                        >
-                                    </div>
+                                        <div class="mt-1">
+                                            <input
+                                                type="text"
+                                                placeholder="Catatan (opsional)"
+                                                @focus="setActiveInput($event.target)"
+                                                x-model="item.note"
+                                                class="w-full text-xs border rounded-md px-2 py-1 focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                            >
+                                        </div>
 
-                                </div>
-                            </template>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                     </div>
 
@@ -404,12 +288,13 @@
                 <!-- NOMOR MEJA -->
                 <div x-show="orderType === 'dine_in'">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Nomor Meja
+                        Nomor Pager
                     </label>
                     <input
                         type="text"
+                        @focus="setActiveInput($event.target)"
                         x-model="tableNumber"
-                        placeholder="Contoh: A1 / 5 / VIP"
+                        placeholder="Contoh: A1 / 5"
                         class="w-full border rounded-lg px-3 py-2"
                     >
                 </div>
@@ -478,7 +363,7 @@
                                         x-show="tableNumber"
                                         class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold"
                                     >
-                                        Meja <span x-text="tableNumber"></span>
+                                        Pager <span x-text="tableNumber"></span>
                                     </span>
 
                                 </div>
@@ -584,7 +469,7 @@
 
                     <!-- RIGHT : PAYMENT -->
                     <div class="space-y-6 pr-6">
-                        <div class="flex border-gray-200 bg-white border rounded-xl p-2">
+                        <div class="flex border-gray-200 bg-white border border-black rounded-xl p-2">
                             <button
                                 @click="paymentType = 'PAY'"
                                 :class="paymentType === 'PAY'
@@ -599,7 +484,7 @@
                                             ? 'bg-orange-600 text-white'
                                             : 'border-transparent text-gray-500 hover:text-orange-600'"
                                 class="flex-1 text-center py-3 rounded-xl text-sm font-medium transition">
-                                Draft
+                                Open Bill
                             </button>
                         </div>
 
@@ -610,6 +495,7 @@
                                 <label class="text-sm font-medium">Nama Customer</label>
                                 <input
                                     type="text"
+                                    @focus="setActiveInput($event.target)"
                                     x-model="customerName"
                                     placeholder="Opsional"
                                    class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
@@ -620,6 +506,7 @@
                                 <label class="text-sm font-medium">No. HP</label>
                                 <input
                                     type="text"
+                                    @focus="setActiveInput($event.target)"
                                     x-model="customerPhone"
                                     placeholder="Opsional"
                                     class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
@@ -630,6 +517,7 @@
                                 <label class="text-sm font-medium">Catatan Order</label>
                                 <textarea
                                     x-model="draftNote"
+                                    @focus="setActiveInput($event.target)"
                                     rows="3"
                                     placeholder="Contoh: bayar nanti, reservasi jam 7"
                                     class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
@@ -722,6 +610,7 @@
                                     </label>
                                     <input
                                         type="number"
+                                        @focus="setActiveInput($event.target)"
                                         class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
                                         x-model.number="payAmount"
                                     >
@@ -779,6 +668,97 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- MODAL KEYBOARD -->
+        <div
+            x-show="keyboardOpen"
+            x-transition
+            class="fixed bottom-4 z-50
+           bg-white/95 backdrop-blur
+           rounded-xl border shadow-2xl
+           w-[900px] max-w-[95vw]"
+        >
+
+            <!-- HEADER -->
+            <div class="flex items-center justify-between px-4 py-2 border-b">
+        <span class="text-sm font-semibold text-gray-600">
+            Virtual Keyboard
+        </span>
+
+                <button
+                    @click="keyboardOpen = false"
+                    class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-200 transition"
+                >
+                    <i class="fa fa-times text-gray-600"></i>
+                </button>
+            </div>
+
+            <!-- BODY -->
+            <div class="p-4 space-y-3 text-center">
+
+                <!-- ROW 1 -->
+                <div class="grid grid-cols-10 gap-2">
+                    <template x-for="key in ['1','2','3','4','5','6','7','8','9','0']">
+                        <button
+                            @click="pressKey(key)"
+                            class="key-btn w-full"
+                            x-text="key"
+                        ></button>
+                    </template>
+                </div>
+
+                <!-- ROW 2 -->
+                <div class="grid grid-cols-10 gap-2">
+                    <template x-for="key in ['Q','W','E','R','T','Y','U','I','O','P']">
+                        <button
+                            @click="pressKey(key)"
+                            class="key-btn w-full"
+                            x-text="key"
+                        ></button>
+                    </template>
+                </div>
+
+                <!-- ROW 3 -->
+                <div class="grid grid-cols-11 gap-2 justify-center">
+                    <div></div>
+
+                    <template x-for="key in ['A','S','D','F','G','H','J','K','L']">
+                        <button
+                            @click="pressKey(key)"
+                            class="key-btn w-full"
+                            x-text="key"
+                        ></button>
+                    </template>
+
+                    <div></div>
+                </div>
+
+                <!-- ROW 4 -->
+                <div class="grid grid-cols-11 gap-2 justify-center">
+                    <div></div>
+                    <div></div>
+
+                    <template x-for="key in ['Z','X','C','V','B','N','M']">
+                        <button
+                            @click="pressKey(key)"
+                            class="key-btn w-full"
+                            x-text="key"
+                        ></button>
+                    </template>
+
+                    <div></div>
+                    <div></div>
+                </div>
+
+                <!-- ROW 5 -->
+                <div class="grid grid-cols-10 gap-2">
+                    <button @click="clearSearch()" class="key-btn col-span-2">CLR</button>
+                    <button @click="pressKey(' ')" class="key-btn col-span-6">Space</button>
+                    <button @click="backspace()" class="key-btn col-span-2">⌫</button>
+                </div>
+
             </div>
         </div>
     </div>
@@ -839,6 +819,8 @@
                 remainingAmount: 0,
 
                 orderMetaOpen: false,
+                keyboardOpen: false,
+                activeInput: null,
 
                 // =====================
                 // ADD MENU
@@ -1120,7 +1102,7 @@
                     }
 
                     if (this.orderType === 'dine_in' && !this.tableNumber) {
-                        alert('Nomor meja wajib diisi untuk Dine In');
+                        alert('Nomor pager wajib diisi untuk Dine In');
                         return;
                     }
 
@@ -1139,7 +1121,7 @@
                     }
 
                     if (this.orderType === 'dine_in' && !this.tableNumber) {
-                        alert('Nomor meja wajib diisi untuk Dine In');
+                        alert('Nomor pager wajib diisi untuk Dine In');
                         return;
                     }
 
@@ -1149,6 +1131,34 @@
                     this.payAmount = this.finalTotal();
                     this.paymentMethod = 'CASH';
                     this.paymentOpen = true;
+                },
+
+                setActiveInput(el) {
+                    this.activeInput = el
+                    this.keyboardOpen = true
+                },
+
+                pressKey(key) {
+                    if (!this.activeInput) return
+
+                    this.activeInput.value += key
+                    this.activeInput.dispatchEvent(new Event('input'))
+                },
+
+                backspace() {
+                    if (!this.activeInput) return
+
+                    this.activeInput.value =
+                        this.activeInput.value.slice(0, -1)
+
+                    this.activeInput.dispatchEvent(new Event('input'))
+                },
+
+                clearSearch() {
+                    if (!this.activeInput) return
+
+                    this.activeInput.value = ''
+                    this.activeInput.dispatchEvent(new Event('input'))
                 },
 
                 // =====================
@@ -1167,31 +1177,30 @@
         function menuSearch(menus) {
             return {
                 search: '',
+                category: '',
                 menus,
-                keyboardOpen: false,
 
                 get filteredMenus() {
-                    if (!this.search) return this.menus;
 
-                    const q = this.search.toLowerCase();
+                    let result = this.menus;
 
-                    return this.menus.filter(m =>
-                        m.name.toLowerCase().includes(q) ||
-                        (m.sku && m.sku.toLowerCase().includes(q)) ||
-                        (m.barcode && m.barcode === this.search)
-                    );
-                },
+                    // filter category
+                    if (this.category) {
+                        result = result.filter(m => m.category === this.category);
+                    }
 
-                pressKey(key) {
-                    this.search += key;
-                },
+                    // filter search
+                    if (this.search) {
+                        const q = this.search.toLowerCase();
 
-                backspace() {
-                    this.search = this.search.slice(0, -1);
-                },
+                        result = result.filter(m =>
+                            m.name.toLowerCase().includes(q) ||
+                            (m.sku && m.sku.toLowerCase().includes(q)) ||
+                            (m.barcode && m.barcode === this.search)
+                        );
+                    }
 
-                clearSearch() {
-                    this.search = '';
+                    return result;
                 },
 
                 enterAdd() {
@@ -1256,7 +1265,7 @@
             text += `Order  : ${order.code}\n`;
             text += `Kasir  : ${cashier}\n`;
             text += `Tanggal: ${order.date}\n`;
-            if (order.table) text += `Meja   : ${order.table}\n`;
+            if (order.table) text += `Pager   : ${order.table}\n`;
             text += line;
 
             // =====================

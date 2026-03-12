@@ -17,6 +17,7 @@ class Order extends Model
         'queue_number',
         'type',
         'channel',
+        'table_number',
         'status',
         'payment_status',
         'sub_total',

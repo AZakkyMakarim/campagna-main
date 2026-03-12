@@ -15,7 +15,7 @@ class PrinterService extends Controller
                 $receipt = $this->build_cashier_receipt($data['order']);
                 break;
             case 'kitchen':
-                $receipt = $this->build_kitchen_receipt($data['order']);
+                $receipt = $this->build_kitchen_receipt($data['order'], $data['items']);
                 break;
             case 'test':
                 $receipt = $this->build_dummy_receipt();
@@ -62,6 +62,7 @@ class PrinterService extends Controller
 
         $outletName    = $order->outlet->name ?? 'TOKO';
         $outletAddress = $order->outlet->address ?? null;
+        $outletPhoneNumber = $order->outlet->phone_number ?? null;
         $cashierName   = $order->cashier->name ?? '-';
 
         $paidAmount = $order->paid_amount ?? $order->payments->sum('amount');
@@ -76,19 +77,22 @@ class PrinterService extends Controller
         $text .= "\x1B\x61\x01";  // CENTER
 
         // HEADER TOKO
-        $text .= strtoupper($outletName) . "\n";
+        $text .= $this->center_text(strtoupper($outletName));
         if (!empty($outletAddress)) {
-            $text .= $outletAddress . "\n";
+            $text .= $this->center_text($outletAddress);
+        }
+        if (!empty($outletPhoneNumber)) {
+            $text .= $this->center_text($outletPhoneNumber) . "\n";
         }
         $text .= "\n";
 
         // META ORDER
         $text .= "\x1B\x61\x00"; // LEFT
-        $text .= "Order  : " . ($order->code ?? '-') . "\n";
-        $text .= "Kasir  : " . $cashierName . "\n";
-        $text .= "Tanggal: " . $order->created_at->format('d/m/Y H:i') . "\n";
+        $text .= "Order       : " . ($order->code ?? '-') . "\n";
+        $text .= "Tanggal     : " . $order->created_at->format('d/m/Y H:i') . "\n";
+        $text .= "Kasir       : " . $cashierName . "\n";
         if (!empty($order->table_number)) {
-            $text .= "Meja   : " . $order->table_number . "\n";
+            $text .= "Nomor Meja  : " . $order->table_number . "\n";
         }
         $text .= $line;
 
@@ -147,8 +151,10 @@ class PrinterService extends Controller
 
         // FOOTER
         $text .= "\x1B\x61\x01"; // CENTER
-        $text .= "Terima kasih\n";
-        $text .= "Powered by Campagna POS\n\n";
+        $text .= $this->center_text("Terima kasih");
+        $text .= $this->center_text("Powered by Campagna POS")."\n\n";
+        $text .= $this->center_text("SSID Wifi : CAMPAGNA");
+        $text .= $this->center_text("Password Wifi : indonesia")."\n\n";
 
         // CUT + OPEN DRAWER
         $text .= "\x1D\x56\x00";          // GS V 0 (cut)
@@ -157,7 +163,7 @@ class PrinterService extends Controller
         return $text;
     }
 
-    function build_kitchen_receipt(Order $order): string
+    function build_kitchen_receipt(Order $order, $items): string
     {
         $line = "--------------------------------\n";
 
@@ -179,7 +185,7 @@ class PrinterService extends Controller
 
         // META (left)
         $text .= "\x1B\x61\x00";
-        $text .= "ANTRIAN : " . ($order->queue_number ?? '-') . "\n";
+//        $text .= "ANTRIAN : " . ($order->queue_number ?? '-') . "\n";
         $text .= "ORDER   : " . ($order->code ?? '-') . "\n";
         if (!empty($order->table_number)) {
             $text .= "MEJA    : " . $order->table_number . "\n";
@@ -188,7 +194,7 @@ class PrinterService extends Controller
         $text .= $line . "\n";
 
         // ITEMS
-        foreach ($order->items as $item) {
+        foreach ($items as $item) {
             $qty = rtrim(rtrim(number_format((float) ($item->qty ?? 0), 2, '.', ''), '0'), '.');
             $name = strtoupper((string) ($item->name_snapshot ?? $item->menu?->name ?? '-'));
 
@@ -328,5 +334,12 @@ class PrinterService extends Controller
 
         $space = max(1, $lineWidth - strlen($left) - strlen($right));
         return $left . str_repeat(' ', $space) . $right . "\n";
+    }
+
+    private function center_text(string $text, int $width = 32): string
+    {
+        $text = trim($text);
+        $padding = max(0, floor(($width - strlen($text)) / 2));
+        return str_repeat(' ', $padding) . $text . "\n";
     }
 }
