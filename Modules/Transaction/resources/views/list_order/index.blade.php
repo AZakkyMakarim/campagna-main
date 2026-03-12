@@ -287,7 +287,7 @@
                     <div class="flex justify-between text-lg font-bold">
                         <span>Sisa Bayar</span>
                         <span class="text-red-600"
-                              x-text="formatRp(payload?.remaining_amount ?? payload?.grand_total)">
+                              x-text="formatRp((payload?.grand_total ?? 0) - (payload?.paid_amount ?? 0))">
                 </span>
                     </div>
                 </div>
@@ -400,9 +400,17 @@
             <div class="space-y-2">
                 <label class="text-sm font-medium" x-text="paymentMode==='FULL' ? 'Uang Diterima' : 'Nominal DP'"></label>
                 <input
-                    type="number"
-                    class="w-full border rounded-lg px-3 py-2 text-right"
-                    x-model.number="payAmount"
+                    type="text"
+                    inputmode="numeric"
+                    @focus="setActiveInput($event.target)"
+                    @keydown="if(!/[0-9]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test($event.key)) $event.preventDefault()"
+                    class="w-full text-gray-700 pl-2 pr-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
+                    :value="payAmount ? payAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''"
+                    @input="
+                        const clean = $event.target.value.replace(/[^0-9]/g, '');
+                        payAmount = Number(clean);
+                        $event.target.value = payAmount ? payAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+                    "
                 >
             </div>
 

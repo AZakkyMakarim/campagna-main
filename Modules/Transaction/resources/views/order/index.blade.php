@@ -609,10 +609,17 @@
                                         </template>
                                     </label>
                                     <input
-                                        type="number"
+                                        type="text"
+                                        inputmode="numeric"
                                         @focus="setActiveInput($event.target)"
-                                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
-                                        x-model.number="payAmount"
+                                        @keydown="if(!/[0-9]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test($event.key)) $event.preventDefault()"
+                                        class="w-full text-gray-700 pl-2 pr-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
+                                        :value="payAmount ? payAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''"
+                                        @input="
+                                            const clean = $event.target.value.replace(/[^0-9]/g, '');
+                                            payAmount = Number(clean);
+                                            $event.target.value = payAmount ? payAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+                                        "
                                     >
                                 </div>
 
