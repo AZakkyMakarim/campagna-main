@@ -6,7 +6,7 @@
 @section('title', 'Bahan & Resep')
 
 @section('content')
-<div x-data="{ tab: 'menu' }">
+<div x-data="{ tab: 'semi' }">
     <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-gray-800">Resep</h2>
         <div class="flex items-center gap-2">
@@ -19,16 +19,16 @@
                 Import
             </button>
 
-            <div x-show="tab === 'menu'">
-                <div class="flex items-center space-x-3">
-                    <button
-                        @click="$dispatch('open-modal', 'modal-form-menu')"
-                        class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
-                        <i class="fa fa-plus"></i>
-                        Tambah
-                    </button>
-                </div>
-            </div>
+{{--            <div x-show="tab === 'menu'">--}}
+{{--                <div class="flex items-center space-x-3">--}}
+{{--                    <button--}}
+{{--                        @click="$dispatch('open-modal', 'modal-form-menu')"--}}
+{{--                        class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">--}}
+{{--                        <i class="fa fa-plus"></i>--}}
+{{--                        Tambah--}}
+{{--                    </button>--}}
+{{--                </div>--}}
+{{--            </div>--}}
 
             <div x-show="tab === 'semi'">
                 <div class="flex items-center space-x-3">
@@ -44,30 +44,30 @@
         </div>
     </div>
 
-    <div class="flex shadow-lg border border-gray-200 bg-white rounded-xl p-2">
-        <button
-            @click="tab = 'menu'"
-            :class="tab === 'menu'
-                ? 'bg-orange-600 text-white'
-                : 'border-transparent text-gray-500 hover:text-orange-600'"
-            class="flex-1 text-center py-3 rounded-xl text-sm font-medium transition">
-            Menu
-        </button>
+{{--    <div class="flex shadow-lg border border-gray-200 bg-white rounded-xl p-2">--}}
+{{--        <button--}}
+{{--            @click="tab = 'menu'"--}}
+{{--            :class="tab === 'menu'--}}
+{{--                ? 'bg-orange-600 text-white'--}}
+{{--                : 'border-transparent text-gray-500 hover:text-orange-600'"--}}
+{{--            class="flex-1 text-center py-3 rounded-xl text-sm font-medium transition">--}}
+{{--            Menu--}}
+{{--        </button>--}}
 
-        <button
-            @click="tab = 'semi'"
-            :class="tab === 'semi'
-                ? 'bg-orange-600 text-white'
-                : 'border-transparent text-gray-500 hover:text-orange-600'"
-            class="flex-1 text-center py-3 rounded-xl text-sm font-medium transition">
-            ½ Jadi
-        </button>
-    </div>
+{{--        <button--}}
+{{--            @click="tab = 'semi'"--}}
+{{--            :class="tab === 'semi'--}}
+{{--                ? 'bg-orange-600 text-white'--}}
+{{--                : 'border-transparent text-gray-500 hover:text-orange-600'"--}}
+{{--            class="flex-1 text-center py-3 rounded-xl text-sm font-medium transition">--}}
+{{--            ½ Jadi--}}
+{{--        </button>--}}
+{{--    </div>--}}
 
     <div class="mt-4">
-        <div x-show="tab === 'menu'">
-            @include('management::recipe.components.menu')
-        </div>
+{{--        <div x-show="tab === 'menu'">--}}
+{{--            @include('management::recipe.components.menu')--}}
+{{--        </div>--}}
         <div x-show="tab === 'semi'">
             @include('management::recipe.components.semi')
         </div>

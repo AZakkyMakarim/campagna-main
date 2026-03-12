@@ -122,7 +122,7 @@
                                         >
                                             <i class="fa fa-box text-[10px]"></i>
                                             <span>Stok:</span>
-                                            <span class="font-semibold" x-text="item.stock_remaining"></span>
+                                            <span class="font-semibold" x-text="numberFormat(item.stock_remaining)"></span>
                                             <span x-text="item.unit"></span>
                                         </div>
 
@@ -224,8 +224,8 @@
                         this.recipeItems = this.recipe.items.map(item => {
                         const ing = item.ingredient;
 
-                        const unitCost = Number(ing?.stock?.avg_cost || 0);
-                        const stock = Number(ing?.stock || 0);
+                        const unitCost = Number(ing?.ingredient_stock?.avg_cost || 0);
+                        const stock = Number(ing?.ingredient_stock?.qty || 0);
                         const baseQty = Number(item.quantity || 0);
 
                         return {
@@ -272,14 +272,15 @@
                     }).format(n || 0);
                 },
 
+                numberFormat(num) {
+                    return Number(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                },
+
                 markManual(index) {
                     this.recipeItems[index].manual = true;
                 }
             };
         }
 
-        function numberFormat(num) {
-            return Number(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        }
     </script>
 @endpush

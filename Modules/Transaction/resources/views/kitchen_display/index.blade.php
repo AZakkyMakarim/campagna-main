@@ -81,16 +81,29 @@
 
             <!-- HEADER -->
             <div class="flex items-center justify-between">
-                <!-- KIRI -->
-                <h3 class="font-bold text-xl">
-                    Antrian:
-                    <span class="text-orange-600" x-text="payload?.code"></span>
-                </h3>
 
-                <!-- KANAN -->
+                <!-- LEFT -->
+                <div class="space-y-1">
+                    <h3 class="font-bold text-xl flex items-center gap-2">
+                        <span>Antrian:</span>
+                        <span class="text-orange-600" x-text="payload?.code"></span>
+                    </h3>
+
+                    <!-- MEJA -->
+                    <p
+                        x-show="payload?.table_number"
+                        class="text-sm text-gray-500 font-medium flex items-center gap-1"
+                    >
+                        <i class="fa fa-table-cells"></i>
+                        <span x-text="'Meja ' + payload.table_number"></span>
+                    </p>
+                </div>
+
+                <!-- RIGHT -->
                 <p class="text-sm text-gray-500 font-semibold">
                     <span x-text="(payload?.items?.length ?? 0) + ' item'"></span>
                 </p>
+
             </div>
 
             <!-- ITEM LIST -->
@@ -99,28 +112,60 @@
                     <div class="border rounded-xl p-4 shadow-sm space-y-3 bg-white">
 
                         <!-- TOP ROW -->
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="font-semibold text-lg" x-text="item.name_snapshot"></p>
-                                <p class="text-xs text-gray-500">
-                                    Total: <span x-text="item.qty"></span>
-                                </p>
+                        <div class="flex items-start justify-between border-b border-gray-200 pb-3 mb-3">
+
+                            <!-- LEFT SIDE -->
+                            <div class="space-y-1">
+
+                                <!-- MENU NAME + TOTAL -->
+                                <div class="flex items-center gap-2">
+                                    <p class="font-semibold text-lg text-gray-800 leading-tight"
+                                       x-text="item.name_snapshot">
+                                    </p>
+
+                                    <span
+                                        class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 font-semibold">
+                x<span x-text="item.qty"></span>
+            </span>
+                                </div>
+
+                                <!-- NOTE -->
+                                <div
+                                    x-show="item.note && item.note.trim() !== ''"
+                                    class="text-xs italic text-orange-600 bg-orange-50 px-2 py-1 rounded w-fit"
+                                >
+                                    <i class="fa fa-note-sticky mr-1"></i>
+                                    <span x-text="item.note"></span>
+                                </div>
+
                             </div>
 
-                            <div class="text-right text-sm">
-                            <span class="text-green-600 font-semibold">
-                                Jadi: <span x-text="item.done_qty"></span>
-                            </span>
-                                <span class="mx-1">|</span>
-                                <span class="text-red-600 font-semibold">
-                                Void: <span x-text="item.void_qty"></span>
-                            </span>
-                                <span class="mx-1">|</span>
-                                <span class="text-gray-600 font-semibold">
-                                Sisa:
-                                <span x-text="item.qty - item.done_qty - item.void_qty"></span>
-                            </span>
+                            <!-- RIGHT SIDE STATUS -->
+                            <div class="flex items-center gap-2 text-xs">
+
+                                <!-- DONE -->
+                                <span
+                                    class="px-2 py-1 rounded bg-green-100 text-green-700 font-semibold flex items-center gap-1">
+            <i class="fa fa-check"></i>
+            <span x-text="item.done_qty"></span>
+        </span>
+
+                                <!-- VOID -->
+                                <span
+                                    class="px-2 py-1 rounded bg-red-100 text-red-700 font-semibold flex items-center gap-1">
+            <i class="fa fa-ban"></i>
+            <span x-text="item.void_qty"></span>
+        </span>
+
+                                <!-- REMAIN -->
+                                <span
+                                    class="px-2 py-1 rounded bg-gray-100 text-gray-700 font-semibold flex items-center gap-1">
+            <i class="fa fa-clock"></i>
+            <span x-text="item.qty - item.done_qty - item.void_qty"></span>
+        </span>
+
                             </div>
+
                         </div>
 
                         <!-- PROGRESS BAR -->

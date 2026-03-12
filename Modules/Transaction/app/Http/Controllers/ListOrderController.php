@@ -15,7 +15,7 @@ class ListOrderController extends Controller
      */
     public function index()
     {
-        $orders = Order::with(['items'])->where('outlet_id', active_outlet_id())->get();
+        $orders = Order::with(['items'])->where('outlet_id', active_outlet_id())->latest()->get();
 
         return view('transaction::list_order.index', compact('orders'));
     }

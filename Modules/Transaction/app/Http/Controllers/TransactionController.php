@@ -25,13 +25,13 @@ class TransactionController extends Controller
         $transactionsToday = Order::whereDate('created_at', $today)->count();
 
         $revenueToday = Order::whereDate('created_at', $today)
-            ->where('status', 'PAID')
+            ->where('payment_status', 'PAID')
             ->sum('grand_total');
 
         $ongoingOrders = Order::whereIn('status', ['OPEN', 'IN_PROGRESS'])->count();
 
         $revenueYesterday = Order::whereDate('created_at', $yesterday)
-            ->where('status', 'PAID')
+            ->where('payment_status', 'PAID')
             ->sum('grand_total');
 
         $deltaPercent = $revenueYesterday > 0
@@ -71,7 +71,7 @@ class TransactionController extends Controller
         $paymentMethods = Payment::select('method', DB::raw('SUM(amount) as total'))
             ->whereDate('paid_at', $today)   // atau created_at, tergantung lu simpan di mana
             ->whereHasMorph('payable', Order::class, function ($q) {
-                $q->where('status', 'PAID');  // pastiin ordernya valid
+                $q->where('payment_status', 'PAID');  // pastiin ordernya valid
             })
             ->groupBy('method')
             ->orderByDesc('total')
@@ -83,7 +83,7 @@ class TransactionController extends Controller
             DB::raw('SUM(grand_total) as total')
         )
             ->whereDate('created_at', $today)
-            ->where('status', 'PAID')
+            ->where('payment_status', 'PAID')
             ->groupBy(DB::raw('HOUR(created_at)'))
             ->orderBy('hour')
             ->get();

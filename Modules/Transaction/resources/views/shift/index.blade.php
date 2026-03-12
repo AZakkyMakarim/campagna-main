@@ -102,12 +102,12 @@
                             </div>
                             <div class="rounded-lg p-4 border border-gray-200 bg-gray-200 text-center">
                                 <span class="block font-semibold text-xl"><i class="fa fa-receipt text-orange-600"></i></span>
-                                <span class="block font-bold text-xl">{{ rp_format(0) }}</span>
+                                <span class="block font-bold text-xl">{{ rp_format($cashIn->sum('amount')) }}</span>
                                 <span class="block font-light text-xs">Penjualan Cash</span>
                             </div>
                             <div class="rounded-lg p-4 border border-gray-200 bg-gray-200 text-center">
                                 <span class="block font-semibold text-xl"><i class="fa fa-piggy-bank text-orange-600"></i></span>
-                                <span class="block font-bold text-xl">{{ rp_format(0) }}</span>
+                                <span class="block font-bold text-xl">{{ rp_format($cashierShift->opening_cash + $cashIn->sum('amount')) }}</span>
                                 <span class="block font-light text-xs">Expected Cash</span>
                             </div>
                         </div>
@@ -119,7 +119,7 @@
                                     Total Transaksi
                                 </span>
 
-                                <span>{{ number_format(0, 0, ',', '.') }} Transaksi</span>
+                                <span>{{ number_format($cashIn->count(), 0, ',', '.') }} Transaksi</span>
                             </div>
                         </div>
                     </div>
@@ -152,7 +152,7 @@
                             </div>
                             <div class="rounded-lg p-4 border border-gray-200 bg-gray-200 text-center">
                                 <span class="block font-semibold text-xl"><i class="fa fa-shopping-bag text-orange-600"></i></span>
-                                <span class="block font-bold text-xl">{{ rp_format($cashMovement->sum('amount')) }}</span>
+                                <span class="block font-bold text-xl">{{ rp_format($cashOut->sum('amount')) }}</span>
                                 <span class="block font-light text-xs">Terpakai</span>
                             </div>
                             <div class="rounded-lg p-4 border border-gray-200 bg-gray-200 text-center">
@@ -169,13 +169,62 @@
                                     Total Transaksi
                                 </span>
 
-                                <span>{{ number_format($cashMovement->count(), 0, ',', '.') }} Transaksi</span>
+                                <span>{{ number_format($cashOut->count(), 0, ',', '.') }} Transaksi</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         @endif
+
+        <div class="relative max-h-[600px] overflow-y-auto rounded-lg shadow-lg border border-gray-200 bg-white">
+            <span class="block font-semibold text-xl p-4"><i class="fa fa-wallet text-orange-600"></i> Petty Cash Hari Ini</span>
+            <table class="w-full text-sm text-left">
+                <thead class="bg-orange-700 text-white uppercase text-xs">
+                <tr>
+                    <th class="px-4 py-3">#</th>
+                    <th class="px-4 py-3">Waktu</th>
+                    <th class="px-4 py-3">Deskripsi</th>
+                    <th class="px-4 py-3">Jumlah</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                @if($pettyCash->count() > 0)
+                    @foreach($pettyCash as $petty)
+                        <tr>
+                            <td class="px-4 py-3">{{ $loop->iteration }}</td>
+                            <td class="px-4 py-3">{{ $petty->description }}</td>
+                            <td class="px-4 py-3">{{ parse_time_hm($petty->created_at) }}</td>
+                            <td class="px-4 py-3">{{ rp_format($petty->amount) }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td colspan="100%" class="py-16">
+                            <div class="flex flex-col items-center justify-center text-center text-gray-500 gap-3">
+
+                                <!-- ICON -->
+                                <div class="w-14 h-14 flex items-center justify-center
+                            rounded-full bg-orange-100 text-orange-500">
+                                    <i class="fa fa-wallet text-2xl"></i>
+                                </div>
+
+                                <!-- TITLE -->
+                                <h3 class="text-sm font-semibold text-gray-600">
+                                    Pengeluaran Hari Ini
+                                </h3>
+
+                                <!-- DESCRIPTION -->
+                                <p class="text-xs text-gray-400 max-w-xs">
+                                    Belum ada pengeluaran yang tercatat hari ini.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                @endif
+                </tbody>
+            </table>
+        </div>
 
         <div class="relative max-h-[600px] overflow-y-auto rounded-lg shadow-lg border border-gray-200 bg-white">
             <span class="block font-semibold text-xl p-4"><i class="fa fa-clock-rotate-left text-orange-600"></i> Riwayat Shift Hari Ini</span>
@@ -279,7 +328,7 @@
                 @csrf
                 <div
                     x-data="cashClosing({
-                                expectedCash: {{ $cashierShift->expected_cash }},
+                                expectedCash: {{ $cashierShift->opening_cash + $cashIn->sum('amount') }},
                                 nextModal: {{ $outlet->initial_cash }}
                             })"
                     class="p-5 space-y-5"
@@ -287,7 +336,7 @@
                     <div class="p-4 bg-orange-100 rounded-lg border border-orange-200">
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-muted-foreground">Expected Cash</span>
-                            <span class="text-xl font-bold text-orange-500">{{ rp_format($cashierShift->expected_cash) }}</span>
+                            <span class="text-xl font-bold text-orange-500">{{ rp_format($cashierShift->opening_cash + $cashIn->sum('amount')) }}</span>
                         </div>
                     </div>
                     <div>

@@ -9,6 +9,7 @@ use App\Models\Picture;
 use App\Models\StockMovement;
 use App\Models\UnitConversion;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Svg\Tag\Image;
@@ -51,6 +52,7 @@ class StockService extends Controller
             ->get();
 
         foreach ($batches as $batch) {
+
             if ($remaining <= 0) break;
 
             $take = min($remaining, (float) $batch->qty_remaining);
@@ -80,9 +82,14 @@ class StockService extends Controller
             $remaining -= $take;
         }
 
+        /**
+         * VALIDASI STOK (sementara dimatikan)
+         */
+        /*
         if ($remaining > 0) {
             throw new \Exception("Stok bahan tidak cukup untuk ingredient_id={$ingredientId}");
         }
+        */
 
         return $totalCost; // buat hitung HPP produksi
     }
@@ -174,6 +181,7 @@ class StockService extends Controller
                     'outlet_id'     => $data['outlet_id'],
                 ],
                 [
+                    'business_id' => Auth::user()->business_id,
                     'qty'      => 0,
                     'avg_cost' => 0,
                 ]

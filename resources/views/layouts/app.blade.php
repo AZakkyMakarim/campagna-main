@@ -483,7 +483,7 @@
                 </div>
             </header>
 
-            <div class="container-fluid m-5">
+            <div class="container-fluid m-5 max-h-screen overflow-y-auto">
                 @yield('content')
             </div>
         </main>
@@ -500,7 +500,6 @@
 
 @vite('resources/js/app.js')
 <x-alert />
-<x-import-errors-modal />
 @stack('js')
 <script>
     document.addEventListener('alpine:init', () => {

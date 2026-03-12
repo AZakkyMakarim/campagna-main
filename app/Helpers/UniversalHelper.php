@@ -7,6 +7,19 @@ if (!function_exists('active_outlet_id')) {
     }
 }
 
+if (!function_exists('active_shift')) {
+    function active_shift()
+    {
+        $shift = \App\Models\CashierShift::where('business_id', auth()->user()->business_id)
+        ->where('outlet_id', active_outlet_id())
+        ->where('user_id', auth()->user()->id)
+        ->where('status', 'OPEN')
+        ->first();
+
+        return $shift;
+    }
+}
+
 if (!function_exists('subdomain')) {
     function subdomain()
     {

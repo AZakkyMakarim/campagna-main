@@ -24,8 +24,8 @@ class ProductionController extends Controller
         $ingredients = Ingredient::with([
                 'baseUnit',
                 'recipe.items.ingredient.batches',
-                'recipe.items.unit',
                 'recipe.items.ingredient.ingredientStock',
+                'recipe.items.unit',
             ])
             ->where('type', 'semi')
             ->whereHas('recipe')
@@ -56,13 +56,13 @@ class ProductionController extends Controller
             $recipe = $recipeIngredient->recipe;
 
             // 1️⃣ VALIDASI: cek stok cukup dulu
-            foreach (json_decode($request->components) as $item) {
-                $stockService->assertStockEnough(
-                    $item->ingredient_id,
-                    active_outlet_id(),
-                    $item->qty
-                );
-            }
+//            foreach (json_decode($request->components) as $item) {
+//                $stockService->assertStockEnough(
+//                    $item->ingredient_id,
+//                    active_outlet_id(),
+//                    $item->qty
+//                );
+//            }
 
             $totalCost = 0;
 
@@ -86,6 +86,7 @@ class ProductionController extends Controller
 
             // 4️⃣ BUAT BATCH BARU (HASIL PRODUKSI)
             $batch = IngredientBatch::create([
+                'code'          => 'PROD-'.uniqid(),
                 'outlet_id'     => active_outlet_id(),
                 'ingredient_id' => $recipe->ingredient_id,
                 'qty_in'        => $producedQty,

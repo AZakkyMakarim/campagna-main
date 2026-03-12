@@ -380,7 +380,7 @@
         }
 
         window.ingredientData = @json($ingredientPayload);
-        window.ingredientGroups = @json($ingredients);
+        window.ingredientGroups = @json($ingredientGroups);
 
         document.addEventListener('DOMContentLoaded', () => {
 
@@ -402,29 +402,29 @@
              * SUBMIT CONDITIONAL
              * =============================== */
              const vendorSelect = $('select[name="vendor_id"]');
-            
+
              function toggleSubmitState() {
                  const hasVendor = !!vendorSelect.val();
                  let allIngredientsSelected = true;
- 
+
                  $('.ingredient-select').each(function() {
                      if (!$(this).val()) {
                          allIngredientsSelected = false;
                          return false; // break loop
                      }
                  });
- 
+
                  const isValid = hasVendor && allIngredientsSelected && $('.ingredient-select').length > 0;
                  $('#btnSubmit').prop('disabled', !isValid);
              }
- 
+
              vendorSelect.on('change', function() {
                  toggleSubmitState();
              });
- 
+
              // Populate baris pertama
              populateIngredientSelect($('select[name="items[0][ingredient_id]"]'), window.ingredientGroups);
- 
+
              // Initial state
              toggleSubmitState();
 
@@ -524,7 +524,6 @@
                 // auto load all ingredients
                 populateIngredientSelect(
                     row.find('.ingredient-select'),
-                    window.ingredientGroups
                 );
 
                 toggleSubmitState();
@@ -543,22 +542,27 @@
             /** ===============================
              * POPULATE INGREDIENT
              * =============================== */
-            function populateIngredientSelect(select, groups) {
+            function populateIngredientSelect(select) {
+
                 select.empty().append('<option value="">Pilih bahan</option>');
 
-                Object.entries(groups).forEach(([label, items]) => {
+                Object.entries(window.ingredientGroups).forEach(([label, items]) => {
+
                     const optgroup = $('<optgroup>', { label });
 
                     items.forEach(item => {
+
                         optgroup.append(
                             new Option(
                                 `${item.name} (${item.base_unit.name})`,
                                 item.id
                             )
                         );
+
                     });
 
                     select.append(optgroup);
+
                 });
 
                 // select.trigger('change.select2');

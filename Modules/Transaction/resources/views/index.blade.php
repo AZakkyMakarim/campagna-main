@@ -118,7 +118,7 @@
                                 <div class="py-3 flex items-center justify-between group">
                                     <div>
                                         <p class="font-semibold text-gray-800">
-                                            #{{ $order->queue_number ?? $order->code }}
+                                            #{{ $order->code ?? $order->queue_number }}
                                         </p>
                                         <p class="text-xs text-gray-500">
                                             {{ $order->items->count() }} item •

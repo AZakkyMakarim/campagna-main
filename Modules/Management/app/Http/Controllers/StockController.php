@@ -19,7 +19,7 @@ class StockController extends Controller
             ->withSum('batches as stock', 'qty_remaining')
             ->withSum('batches as stock_value', DB::raw('qty_remaining * cost_per_unit'))
             ->latest()
-            ->paginate();
+            ->paginate(1000);
 
         return view('management::inventory.stock.index', compact('ingredients'));
     }

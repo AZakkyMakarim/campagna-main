@@ -25,16 +25,29 @@ class CashierShiftController extends Controller
         $cashierShift = (clone $rawCashierShift)->where('status', 'OPEN')->first();
         $histories = (clone $rawCashierShift)->whereDate('opened_at', now())->get();
 
-        $cashMovement = collect();
+        $cashIn = collect();
+        $cashOut = collect();
+        $pettyCash = collect();
         if ($cashierShift){
-            $cashMovement = CashMovement::where('cashier_shift_id', $cashierShift->id)
+            $rawCash = CashMovement::where('cashier_shift_id', $cashierShift->id)
                 ->where('outlet_id', active_outlet_id())
-                ->where('user_id', \auth()->user()->id)
+                ->where('user_id', \auth()->user()->id);
+
+            $cashOut = (clone $rawCash)
                 ->where('type', 'OUT')
+                ->get();
+
+            $cashIn = (clone $rawCash)
+                ->whereIn('category', ['ORDER'])
+                ->get();
+
+            $pettyCash = (clone $rawCash)
+                ->where('type', 'OUT')
+                ->where('category', 'PETTY_CASH')
                 ->get();
         }
 
-        return view('transaction::shift.index', compact('outlet', 'cashierShift', 'cashMovement', 'histories'));
+        return view('transaction::shift.index', compact('outlet', 'cashierShift', 'cashIn', 'cashOut', 'pettyCash', 'histories'));
     }
 
     public function open()

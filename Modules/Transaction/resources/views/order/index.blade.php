@@ -251,11 +251,11 @@
         <div
             x-show="orderMetaOpen"
             x-cloak
-            class="fixed inset-0 z-50 flex items-center justify-center"
+            class="fixed inset-0 z-50 flex items-start justify-center"
         >
             <div class="absolute inset-0 bg-black/60"></div>
 
-            <div class="relative bg-white w-full max-w-md rounded-xl shadow-xl p-6 space-y-5">
+            <div class="relative bg-white w-full max-w-md rounded-xl shadow-xl p-6 mt-10 space-y-5">
 
                 <h2 class="text-lg font-semibold">Informasi Order</h2>
 
@@ -321,11 +321,11 @@
         <div
             x-show="paymentOpen"
             x-cloak
-            class="fixed inset-0 z-50 flex items-center justify-center"
+            class="fixed inset-0 z-50 flex items-start justify-center"
         >
             <div class="absolute inset-0 bg-black/60" @click="closePayment()"></div>
 
-            <div class="relative bg-white w-full max-w-4xl rounded-xl shadow-xl">
+            <div class="relative bg-white w-full max-w-4xl rounded-xl mt-10 shadow-xl">
 
                 <!-- CONTENT -->
                 <div class="grid grid-cols-2 gap-6 py-4">

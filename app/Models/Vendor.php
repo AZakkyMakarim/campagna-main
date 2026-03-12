@@ -12,10 +12,10 @@ class Vendor extends Model
         'phone_number',
         'address',
         'link_maps',
+        'is_active',
         'bank_name',
         'bank_account_number',
         'bank_account_name',
-        'is_active',
     ];
 
     public function vendorIngredients()

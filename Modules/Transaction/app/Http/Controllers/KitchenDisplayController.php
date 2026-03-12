@@ -5,6 +5,7 @@ namespace Modules\Transaction\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\ConsumeStockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -76,6 +77,7 @@ class KitchenDisplayController extends Controller
 
     public function updateItems(Request $request)
     {
+        $consumeStockService = new ConsumeStockService();
         DB::beginTransaction();
         try {
             $orderId = null;
@@ -87,6 +89,8 @@ class KitchenDisplayController extends Controller
                 if (($item['done_qty'] + $item['void_qty']) > $max) {
                     throw new \Exception('Qty melebihi pesanan');
                 }
+
+                $consumeStockService->consumeMenuRecursive($orderItem->menu, $item['done_qty']);
 
                 $orderItem->update([
                     'done_qty' => $item['done_qty'],

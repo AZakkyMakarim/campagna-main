@@ -5,6 +5,7 @@ namespace Modules\Management\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Ingredient;
 use App\Models\IngredientBatch;
+use App\Models\IngredientStock;
 use App\Models\Purchase;
 use App\Models\StockMovement;
 use App\Models\Unit;
@@ -35,35 +36,52 @@ class PurchaseController extends Controller
             });
 
         $ingredientPayload = [];
+        $ingredientGroups  = [];
 
-        foreach ($ingredients->flatten() as $i) {
-            $ingredientPayload[$i->id] = [
-                'name' => $i->name,
-                'base_unit' => [
-                    'id'     => $i->baseUnit->id,
-                    'name'   => $i->baseUnit->name,
-                    'symbol' => $i->baseUnit->symbol,
-                ],
-                'conversions' => $i->unitConversions->map(function ($c) {
-                    return [
-                        'from_unit_id' => $c->from_unit_id,
-                        'to_unit_id'   => $c->to_unit_id,
-                        'multiplier'  => $c->multiplier,
-                        'to_unit' => [
-                            'id'     => $c->toUnit->id,
-                            'name'   => $c->toUnit->name,
-                            'symbol' => $c->toUnit->symbol,
-                        ],
-                    ];
-                })->values(),
-            ];
+        foreach ($ingredients as $group => $items) {
+
+            $ingredientGroups[$group] = [];
+
+            foreach ($items as $i) {
+
+                $ingredientGroups[$group][] = [
+                    'id' => $i->id,
+                    'name' => $i->name,
+                    'base_unit' => [
+                        'id' => $i->baseUnit->id,
+                        'name' => $i->baseUnit->name,
+                        'symbol' => $i->baseUnit->symbol,
+                    ]
+                ];
+
+                $ingredientPayload[$i->id] = [
+                    'name' => $i->name,
+                    'base_unit' => [
+                        'id' => $i->baseUnit->id,
+                        'name' => $i->baseUnit->name,
+                        'symbol' => $i->baseUnit->symbol,
+                    ],
+                    'conversions' => $i->unitConversions->map(function ($c) {
+                        return [
+                            'from_unit_id' => $c->from_unit_id,
+                            'to_unit_id'   => $c->to_unit_id,
+                            'multiplier'   => $c->multiplier,
+                            'to_unit' => [
+                                'id' => $c->toUnit->id,
+                                'name' => $c->toUnit->name,
+                                'symbol' => $c->toUnit->symbol,
+                            ],
+                        ];
+                    })->values(),
+                ];
+            }
         }
 
         $vendors = Vendor::where('business_id', Auth::user()->business_id)
             ->where('is_active', 1)
             ->get();
 
-        return view('management::purchasing.purchase.index', compact('ingredients', 'ingredientPayload', 'purchases', 'vendors', 'units'));
+        return view('management::purchasing.purchase.index', compact('ingredients', 'ingredientPayload', 'purchases', 'vendors', 'units', 'ingredientGroups'));
     }
 
     public function detail(Purchase $purchase){
@@ -127,7 +145,10 @@ class PurchaseController extends Controller
 
                 $qtyBase = $conversion->toBase($item['qty'], $item['unit_id'], $ingredient->base_unit_id, active_outlet_id());
 
+                $costPerUnit = $item['cost'] / $qtyBase;
+
                 $batch = IngredientBatch::create([
+                    'code'          => $code,
                     'purchase_id'   => $purchase->id,
                     'vendor_id'     => $request->vendor_id,
                     'ingredient_id' => $ingredient->id,
@@ -137,6 +158,28 @@ class PurchaseController extends Controller
                     'cost_per_unit' => $item['cost'] / $qtyBase,
                     'source'        => 'purchase',
                     'received_at'   => now(),
+                ]);
+
+                $stock = IngredientStock::firstOrCreate([
+                    'ingredient_id' => $ingredient->id,
+                    'outlet_id'     => active_outlet_id(),
+                ],[
+                    'business_id' => Auth::user()->business_id,
+                    'qty'         => 0,
+                    'avg_cost'    => 0
+                ]);
+
+                $newQty = $stock->qty + $qtyBase;
+
+                // weighted average cost
+                $newAvgCost = (
+                        ($stock->qty * $stock->avg_cost) +
+                        ($qtyBase * $costPerUnit)
+                    ) / max($newQty, 1);
+
+                $stock->update([
+                    'qty' => $newQty,
+                    'avg_cost' => $newAvgCost
                 ]);
 
                 StockMovement::create([
