@@ -49,13 +49,7 @@ class OrderTypeController extends Controller
 
         try {
             $request->validate([
-                'code' => [
-                    'required',
-                    Rule::unique('order_types', 'code')
-                        ->where('business_id', $business->id),
-                ],
                 'name'          => 'required|string',
-                'type'          => 'required|string',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             toast($e->validator->errors()->first(), 'error');
@@ -64,9 +58,7 @@ class OrderTypeController extends Controller
 
         OrderType::create([
             'business_id'   => $business->id,
-            'code'          => $request->code,
             'name'          => $request->name,
-            'type'          => $request->type,
             'description'   => $request->description,
         ]);
 

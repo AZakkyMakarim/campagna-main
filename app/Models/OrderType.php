@@ -11,9 +11,7 @@ class OrderType extends Model
 
     protected $fillable = [
         'business_id',
-        'code',
         'name',
-        'type',
         'description',
         'is_active',
     ];

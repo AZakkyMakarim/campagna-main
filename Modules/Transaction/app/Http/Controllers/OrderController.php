@@ -12,6 +12,7 @@ use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderAdjustment;
 use App\Models\OrderItem;
+use App\Models\OrderType;
 use App\Models\Outlet;
 use App\Models\Payment;
 use App\Models\Printer;
@@ -35,14 +36,36 @@ class OrderController extends Controller
     {
         $outletId = active_outlet_id();
 
+        $categoryOrder = [
+            'jajan pasar',
+            'roti',
+            'keripik',
+            'minuman',
+            'wedangan',
+            'paket nasi',
+            'makanan',
+            'jede sate',
+            'jede bakmi',
+        ];
+
         $outlet = Outlet::findOrFail($outletId);
 
         $raw = Menu::query()
+            ->with('picture')
             ->where('outlet_id', $outletId)
             ->where('is_active', true);
 
+        $categories = (clone $raw)
+            ->pluck('category')
+            ->unique()
+            ->sortBy(function ($cat) use ($categoryOrder) {
 
-        $categories = (clone $raw)->pluck('category')->unique();
+                $index = array_search(strtolower($cat), $categoryOrder);
+
+                return $index === false ? 999 : $index;
+
+            })
+            ->values();
 
         // =========================
         // MENU LIST (READY JUAL)
@@ -60,7 +83,9 @@ class OrderController extends Controller
             })
             ->get();
 
-        return view('transaction::order.index', compact('outlet','menus', 'printers', 'taxes', 'categories'));
+        $orderTypes = OrderType::where('is_active', 1)->get();
+
+        return view('transaction::order.index', compact('outlet','menus', 'printers', 'taxes', 'categories', 'orderTypes'));
     }
 
     /**
@@ -198,15 +223,40 @@ class OrderController extends Controller
             // =========================
             foreach ($request->items as $item) {
                 $menu = Menu::find($item['menu_id']);
+
+                $doneQty = 0;
+                $excluded = ['makanan', 'wedangan', 'minuman', 'jede sate', 'jede bakmi', 'paket nasi'];
+
+                if (active_outlet_id() == 2) {
+                    $excluded = ['makanan', 'wedangan', 'minuman', 'paket nasi'];
+                }
+
+                if (!in_array($menu->category, $excluded)) {
+                    $doneQty = $item['qty'];
+                }
+
                 OrderItem::create([
                     'order_id'      => $order->id,
                     'menu_id'       => $item['menu_id'],
                     'name_snapshot' => $menus[$item['menu_id']]->name,
                     'qty'           => $item['qty'],
+                    'done_qty'      => $doneQty,
                     'hpp'           => $menu->calculateHppDynamic(),
                     'price'         => $menus[$item['menu_id']]->sell_price,
                     'subtotal'      => $menus[$item['menu_id']]->sell_price * $item['qty'],
                     'note'          => $item['note'] ?? null,
+                ]);
+            }
+
+            $totalUnits = $order->items->sum('qty');
+            $finishedUnits = $order->items->sum(function ($i) {
+                return ($i->done_qty ?? 0) + ($i->void_qty ?? 0);
+            });
+
+            if ($totalUnits > 0 && $finishedUnits >= $totalUnits) {
+                // Semua sudah selesai / di-void
+                $order->update([
+                    'status' => 'COMPLETED', // atau 'READY' sesuai flow lu
                 ]);
             }
 
@@ -311,6 +361,7 @@ class OrderController extends Controller
                 ];
 
                 $servicePrinter->print($data);
+
                 continue;
             }
 
@@ -330,6 +381,7 @@ class OrderController extends Controller
                 'printer_connection_type'   => $printer->connection_type,
                 'printer_ip'                => $printer->ip_address,
                 'printer_port'              => $printer->port,
+                'printer_name'              => $printer->device_name,
                 'order'                     => $order,
                 'items'                     => $items,
             ];

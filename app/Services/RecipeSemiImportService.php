@@ -34,7 +34,7 @@ class RecipeSemiImportService
             }
 
             $import = new IngredientImport();
-            Excel::import($import, $filePath);
+            Excel::import($import, $filePath,null,\Maatwebsite\Excel\Excel::XLSX);
             $rows = $import->getRows();
         } catch (\Exception $e) {
             return ['success' => 0, 'errors' => 1, 'messages' => ['Gagal membaca file: ' . $e->getMessage()]];

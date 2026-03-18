@@ -16,6 +16,14 @@
                 <i class="fa fa-file-import"></i>
                 Import
             </button>
+            <div class="flex items-center space-x-3">
+                <a
+                    href="{{ $xlsUrl }}"
+                    class="bg-green-600 text-white px-4 py-2 rounded-xl shadow hover:bg-green-500 transition flex items-center gap-2 hover:cursor-pointer">
+                    <i class="fa fa-file-excel"></i>
+                    Export
+                </a>
+            </div>
             <button
                 @click="$dispatch('open-modal', 'modal-form-single')"
                 class="bg-orange-600 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-500 transition flex items-center gap-2 hover:cursor-pointer">
@@ -84,7 +92,7 @@
         </table>
         @if($menus->hasPages())
             <div class="px-5 py-4 border-t border-gray-200">
-                {{ $menus->links() }}
+                {{ $menus->appends(Request::except('page'))->links() }}
             </div>
         @endif
     </div>
@@ -156,7 +164,7 @@
     </form>
 </x-modal>
 <x-modal id="modal-form-single" title="Tambah Menu" icon="fa-plus" size="7xl">
-    <form method="POST" action="{{ route('management.purchasing.menu.single.store') }}"
+    <form method="POST" action="{{ route('management.purchasing.menu.single.store') }}" enctype="multipart/form-data"
           x-data="menuForm(@js($ingredients))"
           class="flex flex-col max-h-[60vh] overflow-hidden"
     >
@@ -206,6 +214,42 @@
                             <label class="block text-sm font-bold text-gray-700 mb-1">Harga Jual</label>
                             <input type="number" step="1" min="0" name="sell_price" required
                                    class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        </div>
+                    </div>
+
+                    <div x-data="{ fileName: '' }">
+                        <label class="block text-sm font-bold text-gray-700">Foto Menu</label>
+
+                        <div class="flex items-center gap-4">
+
+                            <label
+                                class="flex items-center gap-2 px-4 py-2 rounded-lg
+                                        border border-gray-300 bg-white cursor-pointer
+                                        hover:bg-gray-50 transition text-sm text-gray-600"
+                            >
+                                <i class="fa fa-upload text-gray-400"></i>
+                                <span x-text="fileName ? 'Ganti File' : 'Pilih File'"></span>
+
+                                <input
+                                    type="file"
+                                    name="attachment"
+                                    class="hidden"
+                                    accept="image/*"
+                                    @change="fileName = $event.target.files[0]?.name"
+                                >
+                            </label>
+
+                            <!-- INFO FILE -->
+                            <span class="text-xs flex items-center gap-1"
+                                  :class="fileName ? 'text-green-600 font-semibold' : 'text-gray-400'">
+
+                                <template x-if="fileName">
+                                    <i class="fa fa-check-circle"></i>
+                                </template>
+
+                                <span x-text="fileName ? fileName : 'JPG, PNG (max 500 Kb)'"></span>
+                            </span>
+
                         </div>
                     </div>
                 </div>
@@ -330,6 +374,7 @@
             method="POST"
             :action="action"
             x-data="menuForm(@js($ingredients))"
+            enctype="multipart/form-data"
             @open-edit-menu.window="fill($event.detail)"
             class="flex flex-col shrink overflow-hidden"
         >
@@ -383,6 +428,42 @@
                                 <input type="number" step="1" min="0" name="sell_price" required
                                        x-model.number="form.sell_price"
                                        class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                            </div>
+                        </div>
+
+                        <div x-data="{ fileName: '' }">
+                            <label class="block text-sm font-bold text-gray-700">Foto Menu</label>
+
+                            <div class="flex items-center gap-4">
+
+                                <label
+                                    class="flex items-center gap-2 px-4 py-2 rounded-lg
+                                        border border-gray-300 bg-white cursor-pointer
+                                        hover:bg-gray-50 transition text-sm text-gray-600"
+                                >
+                                    <i class="fa fa-upload text-gray-400"></i>
+                                    <span x-text="fileName ? 'Ganti File' : 'Pilih File'"></span>
+
+                                    <input
+                                        type="file"
+                                        name="attachment"
+                                        class="hidden"
+                                        accept="image/*"
+                                        @change="fileName = $event.target.files[0]?.name"
+                                    >
+                                </label>
+
+                                <!-- INFO FILE -->
+                                <span class="text-xs flex items-center gap-1"
+                                      :class="fileName ? 'text-green-600 font-semibold' : 'text-gray-400'">
+
+                                <template x-if="fileName">
+                                    <i class="fa fa-check-circle"></i>
+                                </template>
+
+                                <span x-text="fileName ? fileName : 'JPG, PNG (max 500 Kb)'"></span>
+                            </span>
+
                             </div>
                         </div>
                     </div>

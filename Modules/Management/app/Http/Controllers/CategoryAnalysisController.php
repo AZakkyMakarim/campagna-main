@@ -4,8 +4,11 @@ namespace Modules\Management\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Outlet;
+use App\Models\Payment;
 use App\Services\ExportService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -17,7 +20,10 @@ class CategoryAnalysisController extends Controller
      */
     public function nota()
     {
-        $raw = Order::where('outlet_id', active_outlet_id())->where('status', 'COMPLETED');
+        $raw = Order::where('outlet_id', active_outlet_id())
+            ->filters()
+            ->where('status', 'COMPLETED')
+            ->latest();
 
         $currentQueries = \request()->query();
         $xls = ['download' => 'XLS'];
@@ -26,7 +32,19 @@ class CategoryAnalysisController extends Controller
 
         if (request('download')) {
             if (\request()->download == 'XLS') {
-                $title = 'Analisa Kategori - Nota';
+                $period = null;
+
+                if (request('date_range_order')) {
+                    $date = get_start_and_end_date(request('date_range_order'));
+
+                    $start = parse_date($date['start_date']);
+                    $end   = parse_date($date['end_date']);
+
+                    $period = $start.' s.d '.$end;
+                }
+
+                $title = 'Analisa Kategori - Nota'.(!empty($period) ? '<br>Periode '.$period : '');
+
                 $outlet = Outlet::find(active_outlet_id())->name;
 
                 $export = new ExportService($raw->get(), 'management::sales.category_analysis.nota.xls', ['thead_rows' => 3, 'outlet' => $outlet, 'title' => $title]);
@@ -44,23 +62,28 @@ class CategoryAnalysisController extends Controller
         $start = $request->start_date ?? now()->subMonth()->startOfMonth();
         $end   = $request->end_date ?? now()->endOfMonth();
 
-        $raw = DB::table('order_items as oi')
-            ->join('orders as o', 'o.id', '=', 'oi.order_id')
-            ->join('menus as m', 'm.id', '=', 'oi.menu_id')
-            ->where('o.outlet_id', active_outlet_id())
-            ->whereBetween('o.created_at', [$start, $end])
-            ->where('o.status', 'COMPLETED') // atau PAID sesuai sistem lu
-            ->select(
-                'm.id',
-                'm.name',
-                'm.sku',
-                'm.category',
-                DB::raw('SUM(oi.qty) as qty_terjual'),
-                DB::raw('SUM(oi.qty * oi.hpp) as total_hpp'),
-                DB::raw('SUM(oi.subtotal) as total_harga_jual'),
-                DB::raw('SUM(oi.subtotal - (oi.qty * oi.hpp)) as total_omzet')
-            )
-            ->groupBy('m.id', 'm.name', 'm.sku', 'm.category')
+        if(\request('date_range_order')){
+            $date = get_start_and_end_date(request('date_range_order'));
+            $start = Carbon::parse($date['start_date'])->startOfDay();
+            $end = Carbon::parse($date['end_date'])->endOfDay();
+        }
+
+        $raw = OrderItem::query()
+            ->with(['menu:id,name,sku,category'])
+            ->whereHas('order', function ($q) use ($start, $end) {
+                $q->where('outlet_id', active_outlet_id())
+                    ->whereBetween('created_at', [$start, $end])
+                    ->where('status', 'COMPLETED');
+            })
+            ->filters()
+            ->selectRaw("
+                menu_id,
+                SUM(qty) as qty_terjual,
+                SUM(qty * hpp) as total_hpp,
+                SUM(subtotal) as total_harga_jual,
+                SUM(subtotal - (qty * hpp)) as total_omzet
+            ")
+            ->groupBy('menu_id')
             ->orderByDesc('qty_terjual');
 
 
@@ -71,7 +94,18 @@ class CategoryAnalysisController extends Controller
 
         if (request('download')) {
             if (\request()->download == 'XLS') {
-                $title = 'Analisa Kategori - Menu';
+                $period = null;
+
+                if (request('date_range_order')) {
+                    $date = get_start_and_end_date(request('date_range_order'));
+
+                    $start = parse_date($date['start_date']);
+                    $end   = parse_date($date['end_date']);
+
+                    $period = $start.' s.d '.$end;
+                }
+
+                $title = 'Analisa Kategori - Menu'.(!empty($period) ? '<br>Periode '.$period : '');
                 $outlet = Outlet::find(active_outlet_id())->name;
 
                 $export = new ExportService($raw->get(), 'management::sales.category_analysis.menu.xls', ['thead_rows' => 3, 'outlet' => $outlet, 'title' => $title]);
@@ -89,20 +123,24 @@ class CategoryAnalysisController extends Controller
         $start = $request->start_date ?? now()->subMonth()->startOfMonth();
         $end   = $request->end_date ?? now()->endOfMonth();
 
-        $raw = DB::table('payments as p')
-            ->join('orders as o', function ($join) {
-                $join->on('o.id', '=', 'p.payable_id')
-                    ->where('p.payable_type', \App\Models\Order::class);
+        $raw = Payment::query()
+            ->filters()
+            ->whereHasMorph('payable', Order::class, function ($query) use ($start, $end){
+                $query->where('outlet_id', active_outlet_id())
+                    ->whereBetween('created_at', [$start, $end])
+                    ->where('status', 'COMPLETED');
+                })
+            ->join('orders', function ($join) {
+                $join->on('orders.id', '=', 'payments.payable_id')
+                    ->where('orders.outlet_id', active_outlet_id())
+                    ->where('payments.payable_type', Order::class);
             })
-            ->where('o.outlet_id', active_outlet_id())
-            ->whereBetween('o.created_at', [$start, $end])
-            ->where('o.status', 'COMPLETED')
-            ->select(
-                'p.method',
-                DB::raw('COUNT(p.id) as jumlah_transaksi'),
-                DB::raw('SUM(p.amount) as total_nominal')
-            )
-            ->groupBy('p.method')
+            ->selectRaw("
+                payments.method,
+                COUNT(payments.id) as jumlah_transaksi,
+                SUM(orders.grand_total) as total_nominal
+            ")
+            ->groupBy('payments.method')
             ->orderByDesc('total_nominal');
 
         $currentQueries = \request()->query();
@@ -112,7 +150,18 @@ class CategoryAnalysisController extends Controller
 
         if (request('download')) {
             if (\request()->download == 'XLS') {
-                $title = 'Analisa Kategori - Metode Pembayaran';
+                $period = null;
+
+                if (request('date_range_order')) {
+                    $date = get_start_and_end_date(request('date_range_order'));
+
+                    $start = parse_date($date['start_date']);
+                    $end   = parse_date($date['end_date']);
+
+                    $period = $start.' s.d '.$end;
+                }
+
+                $title = 'Analisa Kategori - Metode Pembayaran'.(!empty($period) ? '<br>Periode '.$period : '');
                 $outlet = Outlet::find(active_outlet_id())->name;
 
                 $export = new ExportService($raw->get(), 'management::sales.category_analysis.payment_method.xls', ['thead_rows' => 3, 'outlet' => $outlet, 'title' => $title]);
@@ -130,21 +179,28 @@ class CategoryAnalysisController extends Controller
         $start = $request->start_date ?? now()->subMonth()->startOfMonth();
         $end   = $request->end_date ?? now()->endOfMonth();
 
-        $raw = DB::table('orders as o')
-            ->join('payments as p', function ($join) {
-                $join->on('o.id', '=', 'p.payable_id')
-                    ->where('p.payable_type', \App\Models\Order::class);
+        $sales = Order::with([
+                'items:id,order_id,menu_id,qty,hpp,subtotal',
+                'items.menu:id,name,sku,category'
+            ])
+            ->filters()
+            ->whereHas('payments', function ($query){
+                $query->hasMorph('payable', [Order::class]);
             })
-            ->where('o.outlet_id', active_outlet_id())
-            ->whereBetween('o.created_at', [$start, $end])
-            ->where('o.status', 'COMPLETED')
-            ->select(
-                'o.type as jenis_order',
-                DB::raw('COUNT(DISTINCT o.id) as jumlah_transaksi'),
-                DB::raw('SUM(p.amount) as total_nominal')
-            )
-            ->groupBy('o.type')
-            ->orderByDesc('total_nominal');
+            ->where('outlet_id', active_outlet_id())
+            ->whereBetween('created_at', [$start, $end])
+            ->where('status', 'COMPLETED')
+            ->get()
+            ->groupBy('type')->map(function ($group) {
+
+                return (object)[
+                    'jenis_order' => $group->first()->type,
+                    'jumlah_transaksi' => $group->count(),
+                    'total_nominal' => $group->flatMap->payments->sum('amount'),
+                    'items' => $group->flatMap->items
+                ];
+
+            });
 
         $currentQueries = \request()->query();
         $xls = ['download' => 'XLS'];
@@ -153,18 +209,36 @@ class CategoryAnalysisController extends Controller
 
         if (request('download')) {
             if (\request()->download == 'XLS') {
-                $title = 'Analisa Kategori - Order';
+                $period = null;
+
+                if (request('date_range_order')) {
+                    $date = get_start_and_end_date(request('date_range_order'));
+
+                    $start = parse_date($date['start_date']);
+                    $end   = parse_date($date['end_date']);
+
+                    $period = $start.' s.d '.$end;
+                }
+
+                $title = 'Analisa Kategori - Order'.(!empty($period) ? '<br>Periode '.$period : '');
                 $outlet = Outlet::find(active_outlet_id())->name;
 
-                $export = new ExportService($raw->get(), 'management::sales.category_analysis.order.xls', ['thead_rows' => 3, 'outlet' => $outlet, 'title' => $title]);
+                $export = new ExportService($sales, 'management::sales.category_analysis.order.xls', ['thead_rows' => 3, 'outlet' => $outlet, 'title' => $title]);
 
                 return Excel::download($export, $title.'.xls');
             }
         }
 
-        $sales = $raw->paginate();
-
         return view('management::sales.category_analysis.order.index', compact('sales', 'xlsUrl'));
+    }
+
+    public function detailOrder($type){
+        $items = OrderItem::whereHas('order', function ($query) use ($type){
+                $query->where('type', $type);
+            })
+            ->paginate();
+
+        return view('management::sales.category_analysis.order.detail', compact('items'));
     }
 
     /**
@@ -226,6 +300,7 @@ class CategoryAnalysisController extends Controller
             'status'            => $order->status,
             'payment_status'    => $order->payment_status,
             'hpp_total'         => $order->calculateHpp(),
+            'paid_amount'       => $order->paid_amount,
             'adjustments' => $order->adjustments->map(function ($adj) {
                 return [
                     'id' => $adj->id,

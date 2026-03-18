@@ -213,7 +213,7 @@ if (!function_exists('parse_date_time')) {
         \Carbon\Carbon::setLocale('id');
 //        $date = \Carbon\Carbon::parse($date)->formatLocalized("%d %B %Y, %I:%M:%S %p");
         $date = \Carbon\Carbon::parse($date);
-        return $date->format('d').' '.get_month_name($date->format('m')).' '.$date->format('Y'). ', '.\Carbon\Carbon::parse($date)->translatedFormat('H:i:s');
+        return $date->format('d').' '.get_month_name($date->format('m')).' '.$date->format('Y'). ', '.\Carbon\Carbon::parse($date)->translatedFormat('H:i');
 //        return $date;
     }
 }
@@ -377,10 +377,10 @@ if (!function_exists('get_start_and_end_date')) {
     function get_start_and_end_date($dates)
     {
         try {
-            $range = explode(' - ', $dates);
+            $range = preg_split('/\s+to\s+|\s+-\s+/', $dates);
+            $start = Carbon::createFromFormat('Y-m-d', $range[0])->toDateString();
+            $end = Carbon::createFromFormat('Y-m-d', $range[1] ?? $range[0])->toDateString();
 
-            $start = Carbon::createFromFormat('m/d/Y', $range[0])->toDateString();
-            $end = Carbon::createFromFormat('m/d/Y', $range[1])->toDateString();
             return [
                 'start_date' => $start,
                 'end_date' => $end

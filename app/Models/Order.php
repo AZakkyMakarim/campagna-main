@@ -2,10 +2,15 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'business_id',
         'outlet_id',
@@ -53,6 +58,10 @@ class Order extends Model
         return $this->morphMany(Payment::class, 'payable');
     }
 
+    public function payment(){
+        return $this->morphOne(Payment::class, 'payable')->latest();
+    }
+
     public function getPaidAmountAttribute()
     {
         return $this->payments()->sum('amount');
@@ -74,5 +83,39 @@ class Order extends Model
 
             return $menuHpp * $qty;
         });
+    }
+
+    public function scopeFilters(Builder $query){
+        return $query
+            ->when(request('code'), function ($query){
+                $query->where('code', 'LIKE', '%'.request('code').'%');
+            })
+            ->when(request('table_number'), function ($query){
+                $query->where('table_number', 'LIKE', '%'.request('table_number').'%');
+            })
+            ->when(request('type'), function ($query){
+                $query->where('type', request('type'));
+            })
+            ->when(request('status'), function ($query){
+                $query->where('status', request('status'));
+            })
+            ->when(request('payment_status'), function ($query){
+                $query->where('payment_status', request('payment_status'));
+            })
+            ->when(request('order_types'), function ($query){
+                $query->whereIn('type', request('order_types'));
+            })
+            ->when(request('payment_methods'), function ($query){
+                $query->whereHas('payment', function ($query){
+                    $query->whereIn('method', request('payment_methods'));
+                });
+            })
+            ->when(request('date_range_order'), function ($query){
+                $date = get_start_and_end_date(request('date_range_order'));
+                $startDate = Carbon::parse($date['start_date'])->startOfDay();
+                $endDate = Carbon::parse($date['end_date'])->endOfDay();
+
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            });
     }
 }
