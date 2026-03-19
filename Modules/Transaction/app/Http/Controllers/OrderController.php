@@ -12,6 +12,7 @@ use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderAdjustment;
 use App\Models\OrderItem;
+use App\Models\OrderType;
 use App\Models\Outlet;
 use App\Models\Payment;
 use App\Models\Printer;
@@ -35,14 +36,36 @@ class OrderController extends Controller
     {
         $outletId = active_outlet_id();
 
+        $categoryOrder = [
+            'jajan pasar',
+            'roti',
+            'keripik',
+            'minuman',
+            'wedangan',
+            'paket nasi',
+            'makanan',
+            'jede sate',
+            'jede bakmi',
+        ];
+
         $outlet = Outlet::findOrFail($outletId);
 
         $raw = Menu::query()
+            ->with('picture')
             ->where('outlet_id', $outletId)
             ->where('is_active', true);
 
+        $categories = (clone $raw)
+            ->pluck('category')
+            ->unique()
+            ->sortBy(function ($cat) use ($categoryOrder) {
 
-        $categories = (clone $raw)->pluck('category')->unique();
+                $index = array_search(strtolower($cat), $categoryOrder);
+
+                return $index === false ? 999 : $index;
+
+            })
+            ->values();
 
         // =========================
         // MENU LIST (READY JUAL)
@@ -60,7 +83,9 @@ class OrderController extends Controller
             })
             ->get();
 
-        return view('transaction::order.index', compact('outlet','menus', 'printers', 'taxes', 'categories'));
+        $orderTypes = OrderType::where('is_active', 1)->get();
+
+        return view('transaction::order.index', compact('outlet','menus', 'printers', 'taxes', 'categories', 'orderTypes'));
     }
 
     /**
@@ -134,7 +159,7 @@ class OrderController extends Controller
             // PAYMENT LOGIC
             // =========================
             $paymentType = $request->payment_type; // PAY | DRAFT
-            $paymentMode = $request->payment['mode'] ?? null; // FULL | DP
+            $paymentMode = $request->payment['mode'] ?? null; // FULL | DP | SPLIT
             $paidAmount  = $request->payment['amount'] ?? 0;
 
             $isDraft = $paymentType === 'DRAFT';
@@ -143,7 +168,18 @@ class OrderController extends Controller
                 $orderStatus = 'OPEN';
                 $paymentStatus = 'UNPAID';
             } else {
-                if ($paymentMode === 'FULL') {
+                if ($paymentMode === 'SPLIT') {
+                    $splits = $request->payment['splits'] ?? [];
+                    $totalSplitAmount = collect($splits)->sum('amount');
+
+                    if ($totalSplitAmount < $finalTotal) {
+                        $orderStatus = 'OPEN';
+                        $paymentStatus = 'PARTIAL';
+                    } else {
+                        $orderStatus = 'OPEN';
+                        $paymentStatus = 'PAID';
+                    }
+                } elseif ($paymentMode === 'FULL') {
                     if ($paidAmount < $finalTotal) {
                         throw new \Exception('Pembayaran kurang');
                     }
@@ -166,10 +202,10 @@ class OrderController extends Controller
             $prefixCode = (clone $settings)->where('name', 'prefix transaction')->first();
             $resetTransaction = (clone $settings)->where('name', 'reset transaction')->first();
 
-            if ($resetTransaction == 'harian'){
+            if ($resetTransaction->value == 'harian'){
                 $orderCount = Order::whereDate('created_at', now())->count();
             }else{
-                $orderCount = Order::whereMonth('created_at', now()->month())->whereYear('created_at', now()->year)->count();
+                $orderCount = Order::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
             }
 
             $order = Order::create([
@@ -198,15 +234,40 @@ class OrderController extends Controller
             // =========================
             foreach ($request->items as $item) {
                 $menu = Menu::find($item['menu_id']);
+
+                $doneQty = 0;
+                $excluded = ['makanan', 'wedangan', 'minuman', 'jede sate', 'jede bakmi', 'paket nasi'];
+
+                if (active_outlet_id() == 2) {
+                    $excluded = ['makanan', 'wedangan', 'minuman', 'paket nasi'];
+                }
+
+                if (!in_array($menu->category, $excluded)) {
+                    $doneQty = $item['qty'];
+                }
+
                 OrderItem::create([
                     'order_id'      => $order->id,
                     'menu_id'       => $item['menu_id'],
                     'name_snapshot' => $menus[$item['menu_id']]->name,
                     'qty'           => $item['qty'],
+                    'done_qty'      => $doneQty,
                     'hpp'           => $menu->calculateHppDynamic(),
                     'price'         => $menus[$item['menu_id']]->sell_price,
                     'subtotal'      => $menus[$item['menu_id']]->sell_price * $item['qty'],
                     'note'          => $item['note'] ?? null,
+                ]);
+            }
+
+            $totalUnits = $order->items->sum('qty');
+            $finishedUnits = $order->items->sum(function ($i) {
+                return ($i->done_qty ?? 0) + ($i->void_qty ?? 0);
+            });
+
+            if ($totalUnits > 0 && $finishedUnits >= $totalUnits) {
+                // Semua sudah selesai / di-void
+                $order->update([
+                    'status' => 'COMPLETED', // atau 'READY' sesuai flow lu
                 ]);
             }
 
@@ -245,25 +306,59 @@ class OrderController extends Controller
             if ($paymentType === 'PAY') {
 //                $this->consumeStockFromOrder($order);
 
-                Payment::create([
-                    'payable_type'  => Order::class,
-                    'payable_id'    => $order->id,
-                    'cashier_id'    => auth()->id(),
-                    'type'          => 'ORDER',
-                    'method'        => $request->payment['method'],
-                    'amount'        => $paidAmount,
-                    'paid_at'       => now(),
-                ]);
+                if ($paymentMode === 'SPLIT') {
+                    $splits = $request->payment['splits'] ?? [];
+                    foreach ($splits as $split) {
+                        Payment::create([
+                            'payable_type'  => Order::class,
+                            'payable_id'    => $order->id,
+                            'cashier_id'    => auth()->id(),
+                            'type'          => 'ORDER',
+                            'method'        => $split['method'],
+                            'amount'        => $split['amount'],
+                            'paid_at'       => now(),
+                        ]);
 
-                CashMovement::create([
-                    'cashier_shift_id'   => active_shift()->id,
-                    'outlet_id'          => active_outlet_id(),
-                    'user_id'            => $user->id,
-                    'type'               => 'IN',
-                    'category'           => 'ORDER',
-                    'amount'             => $paidAmount,
-                    'description'        => 'Pembelian Produk',
-                ]);
+                        CashMovement::create([
+                            'cashier_shift_id'   => active_shift()->id,
+                            'outlet_id'          => active_outlet_id(),
+                            'user_id'            => $user->id,
+                            'type'               => 'IN',
+                            'category'           => 'ORDER',
+                            'amount'             => $split['amount'],
+                            'description'        => 'Pembelian Produk - ' . $split['method'],
+                        ]);
+                    }
+
+                    $cashAmount = collect($splits)
+                        ->filter(fn($s) => in_array(strtoupper($s['method']), ['CASH', 'TUNAI']))
+                        ->sum('amount');
+                    $change = max(0, $cashAmount - max(0, $finalTotal - (collect($splits)->sum('amount') - $cashAmount)));
+                } else {
+                    Payment::create([
+                        'payable_type'  => Order::class,
+                        'payable_id'    => $order->id,
+                        'cashier_id'    => auth()->id(),
+                        'type'          => 'ORDER',
+                        'method'        => $request->payment['method'],
+                        'amount'        => $paidAmount,
+                        'paid_at'       => now(),
+                    ]);
+
+                    CashMovement::create([
+                        'cashier_shift_id'   => active_shift()->id,
+                        'outlet_id'          => active_outlet_id(),
+                        'user_id'            => $user->id,
+                        'type'               => 'IN',
+                        'category'           => 'ORDER',
+                        'amount'             => $paidAmount,
+                        'description'        => 'Pembelian Produk',
+                    ]);
+
+                    $change = max(0, $paidAmount - $finalTotal);
+                }
+            } else {
+                $change = 0;
             }
 
             DB::commit();
@@ -274,7 +369,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => true,
                 'order' => $order->load('items'),
-                'change' => max(0, $paidAmount - $finalTotal),
+                'change' => $change,
             ]);
 
         } catch (\Throwable $e) {
@@ -300,17 +395,18 @@ class OrderController extends Controller
 
             // === printer kasir ===
             if ($printer->role === 'cashier') {
+                if ($order->payment_status === 'PAID') {
+                    $data = [
+                        'role'                      => $printer->role,
+                        'printer_connection_type'   => $printer->connection_type,
+                        'printer_ip'                => $printer->ip_address,
+                        'printer_port'              => $printer->port,
+                        'order'                     => $order,
+                        'items'                     => $order->items,
+                    ];
 
-                $data = [
-                    'role'                      => $printer->role,
-                    'printer_connection_type'   => $printer->connection_type,
-                    'printer_ip'                => $printer->ip_address,
-                    'printer_port'              => $printer->port,
-                    'order'                     => $order,
-                    'items'                     => $order->items,
-                ];
-
-                $servicePrinter->print($data);
+                    $servicePrinter->print($data);
+                }
                 continue;
             }
 
@@ -330,6 +426,7 @@ class OrderController extends Controller
                 'printer_connection_type'   => $printer->connection_type,
                 'printer_ip'                => $printer->ip_address,
                 'printer_port'              => $printer->port,
+                'printer_name'              => $printer->device_name,
                 'order'                     => $order,
                 'items'                     => $items,
             ];

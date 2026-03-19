@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\WithPictures;
 use Illuminate\Database\Eloquent\Model;
 
 class Menu extends Model
 {
+    use WithPictures;
+
     protected $fillable = [
         'business_id',
         'outlet_id',

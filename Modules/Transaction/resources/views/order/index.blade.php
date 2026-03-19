@@ -15,90 +15,159 @@
             <div x-data="menuSearch({{ $menus->toJson() }})" class="col-span-8 space-y-4">
 
                 {{-- SEARCH & CATEGORY --}}
-                <div class="bg-white rounded-xl border p-4 flex items-center gap-4">
-                    <input
-                        type="text"
-                        placeholder="Cari menu / SKU…"
-                        x-model="search"
-                        @focus="setActiveInput($event.target)"
-                        @keydown.enter.prevent="enterAdd()"
-                        class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
-                    >
+                <div class="bg-white rounded-xl border p-4 space-y-3">
 
-                    <select
-                        x-model="category"
-                        @change="search=''"
-                        class="border rounded-lg px-3 py-2"
-                    >
-                        <option value="">Semua</option>
+                    <!-- SEARCH ROW -->
+                    <div class="flex items-center gap-3">
 
-                        @foreach($categories as $category)
-                            <option value="{{ $category }}">
-                                {{ strtoupper($category) }}
-                            </option>
+                        <input
+                            type="text"
+                            placeholder="Cari menu / SKU…"
+                            x-model="search"
+                            @focus="setActiveInput($event.target)"
+                            @keydown.enter.prevent="enterAdd()"
+                            class="flex-1 text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
+                        >
+
+                        <button
+                            type="button"
+                            @click="keyboardOpen = !keyboardOpen"
+                            class="px-3 py-2 border rounded-lg hover:bg-orange-100 transition"
+                            title="Toggle Keyboard"
+                        >
+                            <i class="fa fa-keyboard"></i>
+                        </button>
+
+                    </div>
+
+                    <!-- CATEGORY PILLS -->
+                    <div class="flex gap-2 overflow-x-auto whitespace-nowrap no-scrollbar flex-nowrap pb-1">
+
+                        <!-- ALL -->
+                        <button
+                            @click="category = ''"
+                            :class="category === ''
+            ? 'bg-orange-600 text-white border-orange-600'
+            : 'bg-white text-gray-600'"
+                            class="px-3 py-1.5 rounded-full border text-sm font-semibold transition shrink-0"
+                        >
+                            Semua
+                        </button>
+
+                        @foreach($categories as $cat)
+                            <button
+                                @click="category = '{{ $cat }}'; search=''"
+                                :class="category === '{{ $cat }}'
+                ? 'bg-orange-600 text-white border-orange-600'
+                : 'bg-white text-gray-600'"
+                                class="px-3 py-1.5 rounded-full border text-sm font-semibold transition hover:bg-orange-300 shrink-0"
+                            >
+                                {{ strtoupper($cat) }}
+                            </button>
                         @endforeach
-                    </select>
 
-                    <button
-                        type="button"
-                        @click="keyboardOpen = !keyboardOpen"
-                        class="px-3 py-2 border rounded-lg hover:bg-orange-100 transition"
-                        title="Toggle Keyboard"
-                    >
-                        <i class="fa fa-keyboard"></i>
-                    </button>
+                    </div>
+
                 </div>
 
                 {{-- MENU GRID --}}
-                <div class="max-h-[75vh] overflow-y-auto pr-2 scroll-smooth">
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <template x-for="menu in filteredMenus" :key="menu.id">
-                            <button
-                                type="button"
-                                @click="addMenu(menu)"
-                                class="relative group border rounded-lg overflow-hidden hover:bg-orange-100 bg-white transition text-left"
-                            >
-                                <!-- IMAGE -->
-                                <div class="h-28 bg-gray-100 flex items-center justify-center">
-                                    <img
-                                        :src="menu.image_url || '/images/placeholder.png'"
-                                        class="object-cover w-full h-full"
+                <div class="max-h-[75vh] overflow-y-auto scroll-smooth">
+
+                    <template x-for="cat in categoryOrder" :key="cat">
+
+                        <div x-show="groupedMenus()[cat] && groupedMenus()[cat].length">
+
+                            <!-- CATEGORY TITLE -->
+                            <h3 class="text-sm font-bold text-gray-600 uppercase tracking-wide mb-2"
+                                x-text="cat">
+                            </h3>
+
+                            <!-- GRID -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+                                <template x-for="menu in groupedMenus()[cat]" :key="menu.id">
+
+                                    <button
+                                        type="button"
+                                        @click="addMenu(menu)"
+                                        class="relative group border rounded-lg overflow-hidden hover:bg-orange-100 bg-white transition text-left"
                                     >
-                                </div>
 
-                                <!-- CONTENT -->
-                                <div class="p-3 space-y-1">
-                                    <p class="text-[11px] text-gray-400 uppercase tracking-wide"
-                                       x-text="menu.sku"></p>
+                                        <!-- IMAGE -->
+                                        <div class="h-28 bg-gray-100 flex items-center justify-center">
+                                            <img
+                                                :src="menu.picture.url || '/images/placeholder.png'"
+                                                class="object-cover w-full h-full"
+                                            >
+                                        </div>
 
-                                    <p class="font-semibold text-gray-800 leading-tight line-clamp-2 min-h-[2.5rem]"
-                                       x-text="menu.name"></p>
+                                        <!-- CONTENT -->
+                                        <div class="p-3 space-y-1">
 
-                                    <p class="text-sm font-bold text-orange-600"
-                                       x-text="formatRp(menu.sell_price)"></p>
-                                </div>
+                                            <p class="text-[11px] text-gray-400 uppercase tracking-wide"
+                                               x-text="menu.sku"></p>
 
-                                <div class="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200">
-                                    <i class="fa fa-plus text-xs"></i>
-                                </div>
-                            </button>
-                        </template>
+                                            <p class="font-semibold text-gray-800 leading-tight line-clamp-2 min-h-[2.5rem]"
+                                               x-text="menu.name"></p>
 
-                        <!-- EMPTY STATE -->
-                        <div
-                            x-show="filteredMenus.length === 0"
-                            class="col-span-full text-center py-10 text-gray-400"
-                        >
-                            Menu tidak ditemukan
+                                            <p class="text-sm font-bold text-orange-600"
+                                               x-text="formatRp(menu.sell_price)"></p>
+
+                                        </div>
+
+                                        <!-- ADD BUTTON -->
+                                        <div class="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200">
+                                            <i class="fa fa-plus text-xs"></i>
+                                        </div>
+
+                                    </button>
+
+                                </template>
+
+                            </div>
+
                         </div>
+
+                    </template>
+
+                    <!-- EMPTY -->
+                    <div
+                        x-show="filteredMenus.length === 0"
+                        class="text-center py-10 text-gray-400"
+                    >
+                        Menu tidak ditemukan
                     </div>
+
                 </div>
             </div>
 
             {{-- RIGHT : CART --}}
-           <div class="col-span-4">
+            <div class="col-span-4 flex flex-col h-[calc(100vh-120px)]">
+                <div class="bg-white rounded-xl border mb-2 shrink-0">
+                   {{-- ORDER META --}}
+                   <div class="px-4 py-3 space-y-2">
 
-                <div class="bg-white rounded-xl border h-full flex flex-col">
+                       <!-- TIPE PESANAN -->
+                       <div>
+                           <label class="text-xs font-semibold text-gray-600">
+                               Tipe Pesanan
+                           </label>
+
+                           <select
+                               x-model="orderType"
+                               class="w-full border rounded-md px-2 py-1 text-sm"
+                           >
+                               <option value="">Pilih</option>
+
+                               @foreach($orderTypes as $orderType)
+                                   <option value="{{ $orderType->name }}">{{ $orderType->name }}</option>
+                               @endforeach
+                           </select>
+                       </div>
+                   </div>
+                </div>
+
+                <div class="bg-white rounded-xl border flex flex-col flex-1 overflow-hidden">
 
                     {{-- CART HEADER --}}
                     <div class="px-4 py-3 border-b flex items-center justify-between">
@@ -109,9 +178,9 @@
                     </div>
 
                     {{-- CART ITEMS --}}
-                    <div class="flex-1 overflow-y-auto divide-y">
+                    <div class="flex-1 overflow-hidden divide-y">
                         {{-- ITEM --}}
-                        <div class="p-4 space-y-3 bg-white">
+                        <div class="pr-2 pl-2 bg-white">
 
                             <!-- EMPTY STATE -->
                             <template x-if="cart.length === 0">
@@ -123,7 +192,7 @@
                             </template>
 
                             <!-- CART ITEMS -->
-                            <div class="max-h-[52vh] overflow-y-auto pr-2 scroll-smooth">
+                            <div class="max-h-[53vh] overflow-y-auto scroll-smooth space-y-2">
                                 <template x-for="(item, index) in cart" :key="item.menu_id">
                                     <div
                                         class="p-3 rounded-lg border hover:bg-orange-50 transition space-y-2"
@@ -247,76 +316,6 @@
 
         </div>
 
-        <!-- MODAL ORDER META -->
-        <div
-            x-show="orderMetaOpen"
-            x-cloak
-            class="fixed inset-0 z-50 flex items-start justify-center"
-        >
-            <div class="absolute inset-0 bg-black/60"></div>
-
-            <div class="relative bg-white w-full max-w-md rounded-xl shadow-xl p-6 mt-10 space-y-5">
-
-                <h2 class="text-lg font-semibold">Informasi Order</h2>
-
-                <!-- TIPE PESANAN -->
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Tipe Pesanan
-                    </label>
-                    <select x-model="orderType" class="w-full border rounded-lg px-3 py-2">
-                        <option value="">Pilih Tipe</option>
-                        @foreach(config('array.order.type') as $key => $type)
-                            <option value="{{ $key }}">{{ $type['display_name'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- JENIS ORDER -->
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Jenis Order
-                    </label>
-                    <select x-model="orderChannel" class="w-full border rounded-lg px-3 py-2">
-                        <option value="">Pilih Jenis</option>
-                        @foreach(config('array.order.channel') as $key => $channel)
-                            <option value="{{ $key }}">{{ $channel['display_name'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- NOMOR MEJA -->
-                <div x-show="orderType === 'dine_in'">
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Nomor Pager
-                    </label>
-                    <input
-                        type="text"
-                        @focus="setActiveInput($event.target)"
-                        x-model="tableNumber"
-                        placeholder="Contoh: A1 / 5"
-                        class="w-full border rounded-lg px-3 py-2"
-                    >
-                </div>
-
-                <div class="flex gap-3">
-                    <button
-                        class="flex-1 border py-2 rounded-lg"
-                        @click="orderMetaOpen = false"
-                    >
-                        Batal
-                    </button>
-
-                    <button
-                        class="flex-1 bg-orange-600 text-white py-2 rounded-lg"
-                        @click="confirmOrderMeta()"
-                    >
-                        Lanjut ke Pembayaran
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- MODAL PAYMENT -->
         <div
             x-show="paymentOpen"
@@ -331,147 +330,163 @@
                 <div class="grid grid-cols-2 gap-6 py-4">
 
                     <!-- LEFT : ORDER SUMMARY -->
-                    <div class="space-y-4 border-r border-gray-200 pr-6 pl-6">
+                    <div class="flex flex-col border-r border-gray-200 pr-6 pl-6 h-full">
 
-                        <!-- META -->
-                        <div class="flex items-start justify-between">
+                        <div class="space-y-4">
+                            <!-- META -->
+                            <div class="flex items-start justify-between">
 
-                            {{-- LEFT : INFO UTAMA --}}
-                            <div class="space-y-2">
+                                {{-- LEFT : INFO UTAMA --}}
+                                <div class="space-y-2">
 
-                                {{-- NAMA OUTLET --}}
-                                <h1 class="text-2xl font-bold text-gray-900 font-serif leading-tight">
-                                    {{ \App\Models\Outlet::find(active_outlet_id())->name }}
-                                </h1>
+                                    {{-- NAMA OUTLET --}}
+                                    <h1 class="text-2xl font-bold text-gray-900 font-serif leading-tight">
+                                        {{ \App\Models\Outlet::find(active_outlet_id())->name }}
+                                    </h1>
 
-                                {{-- ORDER META --}}
-                                <div class="flex flex-wrap items-center gap-2 text-xs">
+                                    {{-- ORDER META --}}
+                                    <div class="flex flex-wrap items-center gap-2 text-xs">
 
+                                        <span
+                                            x-show="orderType"
+                                            class="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold"
+                                            x-text="orderTypeLabel()"
+                                        ></span>
+
+                                        <span
+                                            x-show="orderChannel"
+                                            class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold"
+                                            x-text="orderChannelLabel()"
+                                        ></span>
+
+                                        <span
+                                            x-show="tableNumber"
+                                            class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold"
+                                        >
+                                            Pager <span x-text="tableNumber"></span>
+                                        </span>
+
+                                    </div>
+
+                                    {{-- WAKTU --}}
+                                    <p class="text-xs text-gray-500">
+                                        {{ parse_date_full(now()) }} • {{ parse_time_hm(now()) }}
+                                    </p>
+
+                                </div>
+
+
+                                {{-- RIGHT : STATUS ORDER --}}
+                                <div class="flex flex-col items-end gap-2 text-right">
+
+                                    {{-- STATUS ORDER --}}
                                     <span
-                                        x-show="orderType"
-                                        class="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold"
-                                        x-text="orderTypeLabel()"
-                                    ></span>
-
-                                    <span
-                                        x-show="orderChannel"
-                                        class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold"
-                                        x-text="orderChannelLabel()"
-                                    ></span>
-
-                                    <span
-                                        x-show="tableNumber"
-                                        class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold"
+                                        class="px-3 py-1 rounded-lg text-xs font-semibold bg-green-100 text-green-700"
                                     >
-                                        Pager <span x-text="tableNumber"></span>
+                                        ORDER AKTIF
                                     </span>
 
                                 </div>
 
-                                {{-- WAKTU --}}
-                                <p class="text-xs text-gray-500">
-                                    {{ parse_date_full(now()) }} • {{ parse_time_hm(now()) }}
-                                </p>
                             </div>
 
-                            {{-- RIGHT : STATUS ORDER --}}
-                            <div class="flex flex-col items-end gap-2 text-right">
-
-                                {{-- STATUS ORDER --}}
-                                <span
-                                    class="px-3 py-1 rounded-lg text-xs font-semibold bg-green-100 text-green-700"
+                                <input
+                                    type="text"
+                                    x-model="tableNumber"
+                                    @focus="setActiveInput($event.target)"
+                                    placeholder="Nomor Meja / Pager"
+                                    class="w-full mt-2 text-gray-700 px-3 py-2 rounded-lg border border-gray-300
+           focus:outline-none focus:ring-2 focus:ring-orange-500"
                                 >
-                                    ORDER AKTIF
-                                </span>
 
-                            </div>
 
-                        </div>
+                            <hr>
 
-                        <hr>
+                            <!-- ITEM LIST -->
+                            <div class="space-y-2 max-h-48 overflow-y-auto">
+                                <template x-for="item in cart" :key="item.menu_id">
+                                    <div class="space-y-0.5 text-sm">
 
-                        <!-- ITEM LIST -->
-                        <div class="space-y-2 max-h-48 overflow-y-auto">
-                            <template x-for="item in cart" :key="item.menu_id">
-                                <div class="space-y-0.5 text-sm">
-
-                                    <!-- NAMA + QTY + SUBTOTAL -->
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-700">
-                                            <span x-text="item.name"></span>
-                                            <span class="text-gray-400">
-                                                x<span x-text="item.qty"></span>
+                                        <!-- NAMA + QTY + SUBTOTAL -->
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-700">
+                                                <span x-text="item.name"></span>
+                                                <span class="text-gray-400">
+                                                    x<span x-text="item.qty"></span>
+                                                </span>
                                             </span>
-                                        </span>
 
-                                        <span class="text-gray-800"
-                                              x-text="formatRp(item.subtotal)">
-                                        </span>
+                                            <span class="text-gray-800"
+                                                  x-text="formatRp(item.subtotal)">
+                                            </span>
+                                        </div>
+
+                                        <!-- NOTE (OPSIONAL) -->
+                                        <div
+                                            x-show="item.note && item.note.trim() !== ''"
+                                            class="text-xs text-gray-500 italic pl-2"
+                                        >
+                                            • <span x-text="item.note"></span>
+                                        </div>
+
                                     </div>
+                                </template>
+                            </div>
 
-                                    <!-- NOTE (OPSIONAL) -->
+                            <hr>
+
+                            <!-- TOTAL -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-500">Subtotal</span>
+                                    <span x-text="formatRp(subTotal)"></span>
+                                </div>
+
+                                <template x-for="tax in taxes" :key="tax.id">
                                     <div
-                                        x-show="item.note && item.note.trim() !== ''"
-                                        class="text-xs text-gray-500 italic pl-2"
+                                        x-show="tax.is_active"
+                                        class="flex justify-between text-sm text-gray-600"
                                     >
-                                        • <span x-text="item.note"></span>
+                                        <!-- LABEL -->
+                                        <span>
+                                        <span x-text="tax.name"></span>
+                                        <template x-if="tax.calculation_type === 'percent'">
+                                            <span x-text="` (${tax.value}%)`"></span>
+                                        </template>
+                                    </span>
+
+                                        <!-- NOMINAL HASIL -->
+                                        <span x-text="formatRp(calcTaxAmount(tax))"></span>
                                     </div>
+                                </template>
 
+                                {{--                        <div class="flex justify-between text-sm">--}}
+                                {{--                            <span>Total Pajak</span>--}}
+                                {{--                            <span x-text="formatRp(taxTotal)"></span>--}}
+                                {{--                        </div>--}}
+
+                                <div class="flex justify-between text-sm">
+                                    <span>Pembulatan</span>
+                                    <span x-text="formatRp(rounding())"></span>
                                 </div>
-                            </template>
-                        </div>
 
-                        <hr>
-
-                        <!-- TOTAL -->
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-500">Subtotal</span>
-                                <span x-text="formatRp(subTotal)"></span>
-                            </div>
-
-                            <template x-for="tax in taxes" :key="tax.id">
-                                <div
-                                    x-show="tax.is_active"
-                                    class="flex justify-between text-sm text-gray-600"
-                                >
-                                    <!-- LABEL -->
-                                    <span>
-                                    <span x-text="tax.name"></span>
-                                    <template x-if="tax.calculation_type === 'percent'">
-                                        <span x-text="` (${tax.value}%)`"></span>
-                                    </template>
-                                </span>
-
-                                    <!-- NOMINAL HASIL -->
-                                    <span x-text="formatRp(calcTaxAmount(tax))"></span>
+                                <div class="flex justify-between font-bold text-xl pt-2">
+                                    <span>Total</span>
+                                    <span class="text-orange-600"
+                                          x-text="formatRp(finalTotal())">
+                                    </span>
                                 </div>
-                            </template>
-
-                            {{--                        <div class="flex justify-between text-sm">--}}
-                            {{--                            <span>Total Pajak</span>--}}
-                            {{--                            <span x-text="formatRp(taxTotal)"></span>--}}
-                            {{--                        </div>--}}
-
-                            <div class="flex justify-between text-sm">
-                                <span>Pembulatan</span>
-                                <span x-text="formatRp(rounding())"></span>
                             </div>
 
-                            <div class="flex justify-between font-bold text-xl pt-2">
-                                <span>Total</span>
-                                <span class="text-orange-600"
-                                      x-text="formatRp(finalTotal())">
-                        </span>
-                            </div>
                         </div>
+                        <div class="flex-1"></div>
                     </div>
 
                     <!-- RIGHT : PAYMENT -->
                     <div class="space-y-6 pr-6">
                         <div class="flex border-gray-200 bg-white border border-black rounded-xl p-2">
                             <button
-                                @click="paymentType = 'PAY'"
+                                @click="paymentType = 'PAY';  setPaymentMode('FULL')"
                                 :class="paymentType === 'PAY'
                                             ? 'bg-orange-600 text-white'
                                             : 'border-transparent text-gray-500 hover:text-orange-600'"
@@ -479,7 +494,7 @@
                                 Bayar
                             </button>
                             <button
-                                @click="paymentType = 'DRAFT'"
+                                @click="paymentType = 'DRAFT'; setPaymentMode('DP')"
                                 :class="paymentType === 'DRAFT'
                                             ? 'bg-orange-600 text-white'
                                             : 'border-transparent text-gray-500 hover:text-orange-600'"
@@ -524,6 +539,114 @@
                                 ></textarea>
                             </div>
 
+{{--                            <!-- PAYMENT METHOD -->--}}
+{{--                            <div class="space-y-3">--}}
+{{--                                <label class="text-sm font-medium">Metode Pembayaran</label>--}}
+
+{{--                                <div class="grid grid-cols-3 gap-2">--}}
+{{--                                    <button--}}
+{{--                                        type="button"--}}
+{{--                                        @click="paymentMethod='CASH'"--}}
+{{--                                        :class="paymentMethod==='CASH'--}}
+{{--                                    ? 'bg-orange-600 text-white'--}}
+{{--                                    : 'border hover:bg-orange-100'"--}}
+{{--                                        class="rounded-md px-4 py-3 flex flex-col items-center gap-1"--}}
+{{--                                    >--}}
+{{--                                        <i class="fa fa-money-bill text-lg"></i>--}}
+{{--                                        <span class="text-xs">Cash</span>--}}
+{{--                                    </button>--}}
+
+{{--                                    <button--}}
+{{--                                        type="button"--}}
+{{--                                        @click="paymentMethod='CARD'"--}}
+{{--                                        :class="paymentMethod==='CARD'--}}
+{{--                                    ? 'bg-orange-600 text-white'--}}
+{{--                                    : 'border hover:bg-orange-100'"--}}
+{{--                                        class="rounded-md px-4 py-3 flex flex-col items-center gap-1"--}}
+{{--                                    >--}}
+{{--                                        <i class="fa fa-credit-card text-lg"></i>--}}
+{{--                                        <span class="text-xs">Kartu</span>--}}
+{{--                                    </button>--}}
+
+{{--                                    <button--}}
+{{--                                        type="button"--}}
+{{--                                        @click="paymentMethod='QRIS'"--}}
+{{--                                        :class="paymentMethod==='QRIS'--}}
+{{--                                    ? 'bg-orange-600 text-white'--}}
+{{--                                    : 'border hover:bg-orange-100'"--}}
+{{--                                        class="rounded-md px-4 py-3 flex flex-col items-center gap-1"--}}
+{{--                                    >--}}
+{{--                                        <i class="fa fa-qrcode text-lg"></i>--}}
+{{--                                        <span class="text-xs">QRIS</span>--}}
+{{--                                    </button>--}}
+{{--                                </div>--}}
+{{--                            </div>--}}
+
+{{--                            <!-- CASH INPUT -->--}}
+{{--                            <div x-show="paymentMethod==='CASH'" class="space-y-4">--}}
+
+{{--                                <div class="space-y-2">--}}
+{{--                                    <label class="text-sm font-medium">--}}
+{{--                                        <template x-if="paymentMode==='FULL'">--}}
+{{--                                            <span>Uang Diterima</span>--}}
+{{--                                        </template>--}}
+
+{{--                                        <template x-if="paymentMode==='DP'">--}}
+{{--                                            <span>Nominal DP</span>--}}
+{{--                                        </template>--}}
+{{--                                    </label>--}}
+{{--                                    <input--}}
+{{--                                        type="text"--}}
+{{--                                        inputmode="numeric"--}}
+{{--                                        @focus="setActiveInput($event.target)"--}}
+{{--                                        @keydown="if(!/[0-9]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test($event.key)) $event.preventDefault()"--}}
+{{--                                        class="w-full text-gray-700 pl-2 pr-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"--}}
+{{--                                        :value="payAmount ? payAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''"--}}
+{{--                                        @input="--}}
+{{--                                            const clean = $event.target.value.replace(/[^0-9]/g, '');--}}
+{{--                                            payAmount = Number(clean);--}}
+{{--                                            $event.target.value = payAmount ? payAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';--}}
+{{--                                        "--}}
+{{--                                    >--}}
+{{--                                </div>--}}
+
+{{--                                <!-- QUICK CASH -->--}}
+{{--                                <div class="grid grid-cols-4 gap-2">--}}
+{{--                                    <template x-for="n in [50000,100000,150000,200000]" :key="n">--}}
+{{--                                        <button--}}
+{{--                                            type="button"--}}
+{{--                                            @click="payAmount=n"--}}
+{{--                                            class="border rounded-md py-2 hover:bg-orange-100"--}}
+{{--                                            x-text="formatRp(n)"--}}
+{{--                                        ></button>--}}
+{{--                                    </template>--}}
+{{--                                </div>--}}
+
+{{--                                <button--}}
+{{--                                    type="button"--}}
+{{--                                    @click="payAmount=grandTotal"--}}
+{{--                                    class="w-full border rounded-md py-2 hover:bg-orange-100"--}}
+{{--                                >--}}
+{{--                                    Uang Pas--}}
+{{--                                </button>--}}
+
+{{--                            </div>--}}
+
+{{--                            <!-- CHANGE -->--}}
+{{--                            <div class="bg-gray-100 rounded-lg p-4 text-center">--}}
+{{--                                <template x-if="paymentMode==='FULL'">--}}
+{{--                                    <p class="text-sm text-gray-500">Kembalian</p>--}}
+{{--                                </template>--}}
+
+{{--                                <template x-if="paymentMode==='DP'">--}}
+{{--                                    <p class="text-sm text-gray-500">Sisa Pembayaran</p>--}}
+{{--                                </template>--}}
+
+{{--                                <p class="text-2xl font-bold"--}}
+{{--                                   :class="change < 0 ? 'text-red-500' : 'text-green-600'"--}}
+{{--                                   x-text="formatRp(change)">--}}
+{{--                                </p>--}}
+{{--                            </div>--}}
                         </div>
 
                         <div x-show="paymentType==='PAY'" class="space-y-2">
@@ -531,7 +654,7 @@
                             <div class="space-y-2">
                                 <label class="text-sm font-medium">Mode Pembayaran</label>
 
-                                <div class="grid grid-cols-2 gap-2">
+                                <div class="grid grid-cols-3 gap-2">
                                     <button
                                         type="button"
                                         @click="setPaymentMode('FULL')"
@@ -549,11 +672,137 @@
                                     >
                                         DP
                                     </button>
+
+                                    <button
+                                        type="button"
+                                        @click="setPaymentMode('SPLIT')"
+                                        :class="paymentMode==='SPLIT' ? 'bg-orange-600 text-white' : 'border hover:bg-orange-100'"
+                                        class="rounded-md py-2 text-sm font-semibold"
+                                    >
+                                        Split
+                                    </button>
                                 </div>
                             </div>
 
+                            {{-- SPLIT UI --}}
+                            <div x-show="paymentMode === 'SPLIT'" class="space-y-3 mt-4">
+                                <template x-for="(split, i) in splits" :key="i">
+                                    <div
+                                        class="rounded-xl border p-3 space-y-2 transition-all"
+                                        :class="split.confirmed ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'"
+                                    >
+                                        {{-- HEADER BARIS --}}
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs font-semibold text-gray-500" x-text="`Metode ${i + 1}`"></span>
+                                            <div class="flex items-center gap-1">
+                                                {{-- Badge status --}}
+                                                <span
+                                                    x-show="split.confirmed"
+                                                    class="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full flex items-center gap-1"
+                                                >
+                                                    <i class="fa fa-check"></i> Terkonfirmasi
+                                                </span>
+                                                {{-- Batal konfirmasi --}}
+                                                <button
+                                                    type="button"
+                                                    x-show="split.confirmed"
+                                                    @click="unconfirmSplit(i)"
+                                                    class="text-xs text-orange-500 hover:text-orange-700 px-1"
+                                                    title="Batalkan konfirmasi"
+                                                >
+                                                    <i class="fa fa-rotate-left"></i>
+                                                </button>
+                                                {{-- Hapus baris (hanya jika belum confirmed & > 1 baris) --}}
+                                                <button
+                                                    type="button"
+                                                    x-show="!split.confirmed && splits.length > 1"
+                                                    @click="removeSplit(i)"
+                                                    class="text-red-400 hover:text-red-600 px-1"
+                                                    title="Hapus baris"
+                                                >
+                                                    <i class="fa fa-trash text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {{-- METODE + NOMINAL --}}
+                                        <div class="flex gap-2 items-center">
+                                            <select
+                                                x-model="split.method"
+                                                :disabled="split.confirmed"
+                                                class="border rounded-lg px-2 py-2 flex-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 text-gray-700 disabled:bg-gray-100 disabled:text-gray-400"
+                                            >
+                                                <option value="">Pilih Metode</option>
+                                                <option value="CASH">Cash / Tunai</option>
+                                                <option value="QRIS">QRIS</option>
+                                                <option value="CARD">Kartu Debit/Kredit</option>
+                                                <option value="TRANSFER">Transfer Bank</option>
+                                            </select>
+                                            <input
+                                                type="text" inputmode="numeric"
+                                                :disabled="split.confirmed"
+                                                :value="split.amount ? split.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.') : ''"
+                                                @input="
+                                                    const clean = $event.target.value.replace(/[^0-9]/g,'');
+                                                    split.amount = Number(clean);
+                                                    $event.target.value = split.amount ? split.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.') : '';
+                                                "
+                                                @focus="setActiveInput($event.target)"
+                                                placeholder="Nominal"
+                                                class="border rounded-lg px-2 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-orange-400 text-gray-700 disabled:bg-gray-100 disabled:text-gray-400"
+                                            />
+                                        </div>
+
+                                        {{-- TOMBOL KONFIRMASI --}}
+                                        <button
+                                            type="button"
+                                            x-show="!split.confirmed"
+                                            @click="confirmSplit(i)"
+                                            class="w-full py-2 rounded-lg text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 transition flex items-center justify-center gap-2"
+                                        >
+                                            <i class="fa fa-check"></i>
+                                            Konfirmasi Sudah Dibayar
+                                        </button>
+
+                                        {{-- INFO KEMBALIAN PER BARIS (hanya tunai yang dikonfirmasi) --}}
+                                        <div
+                                            x-show="split.confirmed && ['CASH','TUNAI'].includes(split.method.toUpperCase()) && splitRemainingAmount() < 0"
+                                            class="text-xs text-green-700 bg-green-100 rounded px-2 py-1 text-center"
+                                        >
+                                            Kembalian: <span x-text="formatRp(Math.abs(splitRemainingAmount()))"></span>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                {{-- SISA YANG HARUS DIBAYAR --}}
+                                <div class="bg-gray-50 rounded-xl p-3 space-y-1 text-sm border">
+                                    <div class="flex justify-between text-gray-500">
+                                        <span>Sudah Dikonfirmasi</span>
+                                        <span x-text="formatRp(splitConfirmedTotal())"></span>
+                                    </div>
+                                    <div
+                                        class="flex justify-between font-bold text-base"
+                                        :class="splitRemainingAmount() > 0 ? 'text-red-500' : 'text-green-600'"
+                                    >
+                                        <span x-text="splitRemainingAmount() > 0 ? 'Sisa yang perlu dibayar' : 'Lunas ✓'"></span>
+                                        <span x-text="formatRp(splitRemainingAmount())"></span>
+                                    </div>
+                                </div>
+
+                                {{-- TAMBAH METODE —  hanya tampil jika masih ada sisa --}}
+                                <button
+                                    type="button"
+                                    x-show="splitRemainingAmount() > 0"
+                                    @click="addSplit()"
+                                    class="text-sm text-orange-600 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-50 w-full"
+                                >
+                                    <i class="fa fa-plus mr-1"></i> Tambah Metode Pembayaran
+                                </button>
+                            </div>
+
+
                             <!-- PAYMENT METHOD -->
-                            <div class="space-y-3">
+                            <div class="space-y-3" x-show="paymentMode !== 'SPLIT'">
                                 <label class="text-sm font-medium">Metode Pembayaran</label>
 
                                 <div class="grid grid-cols-3 gap-2">
@@ -596,7 +845,7 @@
                             </div>
 
                             <!-- CASH INPUT -->
-                            <div x-show="paymentMethod==='CASH'" class="space-y-4">
+                            <div x-show="paymentMethod==='CASH' && paymentMode !== 'SPLIT'" class="space-y-4">
 
                                 <div class="space-y-2">
                                     <label class="text-sm font-medium">
@@ -645,7 +894,14 @@
 
                                 <!-- CHANGE -->
                                 <div class="bg-gray-100 rounded-lg p-4 text-center">
-                                    <p class="text-sm text-gray-500">Kembalian</p>
+                                    <template x-if="paymentMode==='FULL'">
+                                        <p class="text-sm text-gray-500">Kembalian</p>
+                                    </template>
+
+                                    <template x-if="paymentMode==='DP'">
+                                        <p class="text-sm text-gray-500">Sisa Pembayaran</p>
+                                    </template>
+
                                     <p class="text-2xl font-bold"
                                        :class="change < 0 ? 'text-red-500' : 'text-green-600'"
                                        x-text="formatRp(change)">
@@ -654,14 +910,22 @@
                             </div>
                         </div>
 
-                        <!-- ACTION PAY -->
+                        {{-- ACTION PAY --}}
                         <button
                             x-show="paymentType==='PAY'"
-                            class="w-full h-14 text-lg bg-orange-600 text-white rounded-lg hover:bg-orange-500 flex items-center justify-center gap-2"
+                            :disabled="paymentMode === 'SPLIT' && !allSplitConfirmed()"
+                            :class="paymentMode === 'SPLIT' && !allSplitConfirmed()
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-orange-600 text-white hover:bg-orange-500'"
+                            class="w-full h-14 text-lg rounded-lg flex items-center justify-center gap-2 transition"
                             @click="processPayment()"
                         >
                             <i class="fa fa-print"></i>
-                            <span x-text="paymentMode==='DP' ? 'Bayar DP' : 'Bayar & Cetak Struk'"></span>
+                            <span x-text="
+                                paymentMode === 'SPLIT'
+                                    ? (allSplitConfirmed() ? 'Bayar & Cetak Struk' : 'Konfirmasi semua pembayaran dulu')
+                                    : (paymentMode === 'DP' ? 'Bayar DP' : 'Bayar & Cetak Struk')
+                            "></span>
                         </button>
 
                         <!-- ACTION DRAFT -->
@@ -671,125 +935,32 @@
                             @click="processPayment()"
                         >
                             <i class="fa fa-save"></i>
-                            Simpan Draft
+                            Simpan
                         </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- MODAL KEYBOARD -->
-        <div
-            x-show="keyboardOpen"
-            x-transition
-            class="fixed bottom-4 z-50
-           bg-white/95 backdrop-blur
-           rounded-xl border shadow-2xl
-           w-[900px] max-w-[95vw]"
-        >
-
-            <!-- HEADER -->
-            <div class="flex items-center justify-between px-4 py-2 border-b">
-        <span class="text-sm font-semibold text-gray-600">
-            Virtual Keyboard
-        </span>
-
-                <button
-                    @click="keyboardOpen = false"
-                    class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-200 transition"
-                >
-                    <i class="fa fa-times text-gray-600"></i>
-                </button>
-            </div>
-
-            <!-- BODY -->
-            <div class="p-4 space-y-3 text-center">
-
-                <!-- ROW 1 -->
-                <div class="grid grid-cols-10 gap-2">
-                    <template x-for="key in ['1','2','3','4','5','6','7','8','9','0']">
-                        <button
-                            @click="pressKey(key)"
-                            class="key-btn w-full"
-                            x-text="key"
-                        ></button>
-                    </template>
-                </div>
-
-                <!-- ROW 2 -->
-                <div class="grid grid-cols-10 gap-2">
-                    <template x-for="key in ['Q','W','E','R','T','Y','U','I','O','P']">
-                        <button
-                            @click="pressKey(key)"
-                            class="key-btn w-full"
-                            x-text="key"
-                        ></button>
-                    </template>
-                </div>
-
-                <!-- ROW 3 -->
-                <div class="grid grid-cols-11 gap-2 justify-center">
-                    <div></div>
-
-                    <template x-for="key in ['A','S','D','F','G','H','J','K','L']">
-                        <button
-                            @click="pressKey(key)"
-                            class="key-btn w-full"
-                            x-text="key"
-                        ></button>
-                    </template>
-
-                    <div></div>
-                </div>
-
-                <!-- ROW 4 -->
-                <div class="grid grid-cols-11 gap-2 justify-center">
-                    <div></div>
-                    <div></div>
-
-                    <template x-for="key in ['Z','X','C','V','B','N','M']">
-                        <button
-                            @click="pressKey(key)"
-                            class="key-btn w-full"
-                            x-text="key"
-                        ></button>
-                    </template>
-
-                    <div></div>
-                    <div></div>
-                </div>
-
-                <!-- ROW 5 -->
-                <div class="grid grid-cols-10 gap-2">
-                    <button @click="clearSearch()" class="key-btn col-span-2">CLR</button>
-                    <button @click="pressKey(' ')" class="key-btn col-span-6">Space</button>
-                    <button @click="backspace()" class="key-btn col-span-2">⌫</button>
-                </div>
-
-            </div>
-        </div>
+        @include('components.virtual-keyboard')
     </div>
 @endsection
 
 @push('css')
     <style>
-        .key-btn {
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 12px 16px;
-            font-size: 18px;
-            font-weight: 600;
-            background: white;
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
         }
-        .key-btn:hover {
-            background: #fff7ed;
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 @endpush
 
 @push('js')
-    <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
-
     <script>
         window.outletName = @json($outlet->name);
         window.outletAddress = @json($outlet->address);
@@ -807,7 +978,7 @@
                 taxes: window.taxRules || [],
                 taxTotal: 0,
 
-                orderType: '',
+                orderType: 'Dine In',
                 orderChannel: '',
                 tableNumber: '',
 
@@ -820,12 +991,64 @@
                 customerName: '',
                 customerPhone: '',
 
-                paymentMode: 'FULL', // FULL | DP
+                paymentMode: 'FULL', // FULL | DP | SPLIT
                 paymentMethod: 'CASH',
                 payAmount: 0,
                 remainingAmount: 0,
+                splits: [{ method: 'CASH', amount: 0, confirmed: false }],
 
-                orderMetaOpen: false,
+                addSplit() {
+                    const sisa = this.splitRemainingAmount();
+                    this.splits.push({ method: '', amount: sisa > 0 ? sisa : 0, confirmed: false });
+                },
+                removeSplit(i) {
+                    if (this.splits[i].confirmed) return; // tidak bisa hapus yang sudah dikonfirmasi
+                    this.splits.splice(i, 1);
+                },
+                confirmSplit(i) {
+                    const split = this.splits[i];
+                    if (!split.method) {
+                        Swal.fire('Perhatian', 'Pilih metode pembayaran terlebih dahulu', 'warning');
+                        return;
+                    }
+                    if (!split.amount || split.amount <= 0) {
+                        Swal.fire('Perhatian', 'Masukkan nominal terlebih dahulu', 'warning');
+                        return;
+                    }
+                    split.confirmed = true;
+                    // Auto-fill sisa ke baris berikutnya jika ada
+                    const sisa = this.splitRemainingAmount();
+                    const nextUnconfirmed = this.splits.findIndex((s, idx) => idx > i && !s.confirmed);
+                    if (nextUnconfirmed !== -1 && sisa > 0) {
+                        this.splits[nextUnconfirmed].amount = sisa;
+                    }
+                },
+                unconfirmSplit(i) {
+                    this.splits[i].confirmed = false;
+                },
+                splitConfirmedTotal() {
+                    return this.splits
+                        .filter(s => s.confirmed)
+                        .reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+                },
+                splitTotal() {
+                    return this.splits.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+                },
+                splitRemainingAmount() {
+                    // Sisa = final total - total confirmed
+                    return Math.max(0, this.finalTotal() - this.splitConfirmedTotal());
+                },
+                splitRemaining() {
+                    const total = this.splitTotal();
+                    const remaining = this.finalTotal() - total;
+                    return remaining; // Positif: kurang, Negatif: kembalian
+                },
+                allSplitConfirmed() {
+                    return this.splits.length > 0 &&
+                           this.splits.every(s => s.confirmed) &&
+                           this.splitConfirmedTotal() >= this.finalTotal();
+                },
+
                 keyboardOpen: false,
                 activeInput: null,
 
@@ -941,13 +1164,25 @@
 
                 // 🔁 OPEN PAYMENT
                 openPayment() {
+
                     if (this.cart.length === 0) {
                         alert('Keranjang masih kosong');
                         return;
                     }
 
-                    // jangan langsung validasi
-                    this.orderMetaOpen = true;
+                    if (!this.orderType) {
+                        alert('Tipe Pesanan wajib dipilih');
+                        return;
+                    }
+
+                    this.payAmount = this.finalTotal();
+                    this.paymentMethod = 'CASH';
+
+                    this.paymentOpen = true;
+
+                    this.$nextTick(() => {
+                        document.querySelector('[x-model="tableNumber"]')?.focus()
+                    })
                 },
 
                 // 🔁 CLOSE PAYMENT
@@ -957,7 +1192,13 @@
 
                 // 💰 KEMBALIAN
                 get change() {
-                    if (this.paymentMode === 'DP') return 0;
+                    if (this.paymentMode === 'SPLIT') {
+                        const rem = this.splitRemaining();
+                        return rem < 0 ? Math.abs(rem) : 0;
+                    }
+                    if (this.paymentMode === 'DP'){
+                        return this.payAmount - this.finalTotal();
+                    };
                     return Math.max(0, this.payAmount - this.finalTotal());
                 },
 
@@ -970,6 +1211,10 @@
 
                     if (mode === 'DP') {
                         this.payAmount = 0;
+                    }
+
+                    if (mode === 'SPLIT') {
+                        this.splits = [{ method: 'CASH', amount: this.finalTotal() }];
                     }
                 },
 
@@ -985,101 +1230,86 @@
                 // 🔥 PROCESS PAYMENT + PRINT
                 // =====================
                 async processPayment() {
-                    let data = JSON.stringify({
-                        // ===== ORDER META =====
-                        type: this.orderType,          // dine_in | take_away | delivery
-                        channel: this.orderChannel,    // dine_in_regular | booking_event | dll
-                        table_number: this.tableNumber || null,
+                    if (this.paymentType === 'DRAFT' && !this.customerName?.trim()) {
+                        alert('Nama customer masih kosong');
+                        return;
+                    }
 
-                        // ===== ITEMS =====
-                        items: this.cart.map(i => ({
-                            menu_id: i.menu_id,
-                            qty: i.qty,
-                            note: i.note || null
-                        })),
+                    if (this.paymentType === 'PAY' && this.paymentMode === 'SPLIT') {
+                        if (!this.allSplitConfirmed()) {
+                            Swal.fire('Perhatian', 'Konfirmasi semua metode pembayaran terlebih dahulu', 'warning');
+                            return;
+                        }
+                    }
 
-                        // ===== PAYMENT FLOW =====
-                        payment_type: this.paymentType, // PAY | DRAFT
+                    try {
 
-                        payment: this.paymentType === 'PAY'
-                            ? {
-                                mode: this.paymentMode,     // FULL | DP
-                                method: this.paymentMethod, // CASH | CARD | QRIS
-                                amount: this.payAmount
-                            }
-                            : null,
+                        const res = await fetch('{{ route('transaction.order.store') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                type: this.orderType,
+                                channel: this.orderChannel,
+                                table_number: this.tableNumber || null,
 
-                        // ===== OPTIONAL =====
-                        customer_name: this.customerName || null,
-                        customer_phone: this.customerPhone || null,
-                        note: this.paymentType === 'DRAFT'
-                            ? this.draftNote || null
-                            : null
-                    });
+                                items: this.cart.map(i => ({
+                                    menu_id: i.menu_id,
+                                    qty: i.qty,
+                                    note: i.note || null
+                                })),
 
-                    fetch('{{ route('transaction.order.store') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: data
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (!res.success) {
-                            alert(res.message);
+                                payment_type: this.paymentType,
+
+                                payment: this.paymentType === 'PAY'
+                                    ? (this.paymentMode === 'SPLIT' 
+                                        ? { mode: 'SPLIT', splits: this.splits }
+                                        : { mode: this.paymentMode, method: this.paymentMethod, amount: this.payAmount }
+                                    )
+                                    : null,
+
+                                customer_name: this.customerName || null,
+                                customer_phone: this.customerPhone || null,
+                                note: this.paymentType === 'DRAFT'
+                                    ? this.draftNote || null
+                                    : null
+                            })
+                        });
+
+                        const result = await res.json();
+
+                        // ===== HTTP ERROR =====
+                        if (!res.ok) {
+                            console.error('HTTP ERROR:', res.status, result);
+                            alert(result.message || 'Server error');
                             return;
                         }
 
-                        const items = this.cart.map(item => ({
-                            name: item.name,
-                            qty: item.qty,
-                            price: item.price,
-                            subtotal: item.subtotal
-                        }));
+                        // ===== APP ERROR =====
+                        if (!result.success) {
+                            console.error('APP ERROR:', result);
+                            alert(result.message || 'Terjadi kesalahan');
+                            return;
+                        }
 
-                        const order = {
-                            code: this.orderCode || '-',
-                            date: new Date().toLocaleString('id-ID'),
-                            table: this.tableNumber || null,
-                            sub_total: this.subTotal,
-                            adjustment_total: this.adjustmentTotal,
-                            grand_total: this.grandTotal
-                        };
+                        console.log('SUCCESS:', result);
+                        alert('Order berhasil');
 
-                        const payment = {
-                            method: this.paymentMethod,
-                            paid: this.payAmount,
-                            change: this.change
-                        };
-
-                        const receipt = buildReceipt({
-                            outlet: {
-                                name: window.outletName,
-                                address: window.outletAddress || ''
-                            },
-                            cashier: window.cashierName,
-                            order,
-                            items,
-                            payment
-                        });
-
-                        // kirim ke QZ / printer
                         // printReceipt(receipt);
 
-                        // 🔄 RESET
-                        // this.resetOrder();
-                        // this.paymentOpen = false;
-                    })
-                    .catch(() => {
+                    } catch (err) {
+
+                        console.error('FETCH ERROR:', err);
                         alert('Gagal memproses order');
-                    })
-                    .finally(() => {
-                        // 🔥 SELALU RESET
+
+                    } finally {
+
                         this.resetOrder();
                         this.paymentOpen = false;
-                    });
+
+                    }
                 },
 
                 // =====================
@@ -1097,52 +1327,13 @@
                     this.payAmount = 0;
                 },
 
-                saveOrderMeta() {
-                    if (!this.orderType) {
-                        alert('Tipe Pesanan wajib dipilih');
-                        return;
-                    }
-
-                    if (!this.orderChannel) {
-                        alert('Jenis Order wajib dipilih');
-                        return;
-                    }
-
-                    if (this.orderType === 'dine_in' && !this.tableNumber) {
-                        alert('Nomor pager wajib diisi untuk Dine In');
-                        return;
-                    }
-
-                    this.orderMetaOpen = false;
-                },
-
-                confirmOrderMeta() {
-                    if (!this.orderType) {
-                        alert('Tipe Pesanan wajib dipilih');
-                        return;
-                    }
-
-                    if (!this.orderChannel) {
-                        alert('Jenis Order wajib dipilih');
-                        return;
-                    }
-
-                    if (this.orderType === 'dine_in' && !this.tableNumber) {
-                        alert('Nomor pager wajib diisi untuk Dine In');
-                        return;
-                    }
-
-                    this.orderMetaOpen = false;
-
-                    // baru buka payment
-                    this.payAmount = this.finalTotal();
-                    this.paymentMethod = 'CASH';
-                    this.paymentOpen = true;
+                isMobile() {
+                    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
                 },
 
                 setActiveInput(el) {
                     this.activeInput = el
-                    this.keyboardOpen = true
+                    this.keyboardOpen = !this.isMobile()
                 },
 
                 pressKey(key) {
@@ -1186,6 +1377,46 @@
                 search: '',
                 category: '',
                 menus,
+                categoryOrder: [
+                    'jajan pasar',
+                    'roti',
+                    'keripik',
+                    'minuman',
+                    'wedangan',
+                    'paket nasi',
+                    'makanan',
+                    'jede sate',
+                    'jede bakmi',
+                    'packaging',
+                    'lainnya'
+                ],
+
+                groupedMenus() {
+
+                    const groups = {};
+
+                    // init category sesuai order
+                    this.categoryOrder.forEach(cat => {
+                        groups[cat] = [];
+                    });
+
+                    // bucket untuk kategori lain
+                    groups['lainnya'] = [];
+
+                    this.filteredMenus.forEach(menu => {
+
+                        const cat = (menu.category || '').toLowerCase();
+
+                        if (groups.hasOwnProperty(cat)) {
+                            groups[cat].push(menu);
+                        } else {
+                            groups['lainnya'].push(menu);
+                        }
+
+                    });
+
+                    return groups;
+                },
 
                 get filteredMenus() {
 
@@ -1250,127 +1481,6 @@
                         maximumFractionDigits: 0
                     }).format(val);
                 }
-            }
-        }
-
-        function buildReceipt({ outlet, cashier, order, items, payment }) {
-            const line = '--------------------------------\n';
-
-            let text = '';
-
-            // INIT
-            text += '\x1B\x40';
-            text += '\x1B\x61\x01'; // CENTER
-
-            // HEADER TOKO
-            text += `${outlet.name}\n`;
-            if (outlet.address) text += `${outlet.address}\n`;
-            text += '\n';
-
-            // META ORDER
-            text += '\x1B\x61\x00'; // LEFT
-            text += `Order  : ${order.code}\n`;
-            text += `Kasir  : ${cashier}\n`;
-            text += `Tanggal: ${order.date}\n`;
-            if (order.table) text += `Pager   : ${order.table}\n`;
-            text += line;
-
-            // =====================
-            // LIST ITEM
-            // =====================
-            items.forEach(item => {
-                // Nama menu
-                text += `${item.name}\n`;
-
-                // Qty x Harga (kiri) + Subtotal (kanan)
-                const left  = `  ${item.qty} @ ${formatRp(item.price)}`;
-                const right = formatRp(item.subtotal);
-
-                // padding biar kanan rata (32 char printer 58mm)
-                const space = Math.max(1, 32 - left.length - right.length);
-                text += left + ' '.repeat(space) + right + '\n';
-            });
-
-            text += line;
-
-            // =====================
-            // TOTAL
-            // =====================
-            text += padLine('Subtotal', formatRp(order.sub_total));
-
-            if (order.adjustment_total !== 0) {
-                text += padLine('Penyesuaian', formatRp(order.adjustment_total));
-            }
-
-            text += padLine('TOTAL', formatRp(order.grand_total), true);
-            text += line;
-
-            // =====================
-            // PEMBAYARAN
-            // =====================
-            text += `Pembayaran: ${payment.method}\n`;
-            text += padLine('Dibayar', formatRp(payment.paid));
-            text += padLine('Kembali', formatRp(payment.change));
-            text += '\n';
-
-            // FOOTER
-            text += '\x1B\x61\x01'; // CENTER
-            text += 'Terima kasih 🙏\n';
-            text += 'Powered by Campagna POS\n\n';
-
-            // CUT
-            text += '\x1D\x56\x00';
-            text += '\x1B\x70\x00\x19\xFA';
-// ESC p 0 25 250  (paling umum)
-
-            return text;
-        }
-
-        function padLine(label, value, bold = false) {
-            let line = '';
-            if (bold) line += '\x1B\x45\x01'; // bold on
-
-            const left = label;
-            const right = value;
-            const space = Math.max(1, 32 - left.length - right.length);
-            line += left + ' '.repeat(space) + right + '\n';
-
-            if (bold) line += '\x1B\x45\x00'; // bold off
-            return line;
-        }
-
-        async function printReceipt(escposText) {
-            if (!window.cashierPrinters || window.cashierPrinters.length === 0) {
-                alert('Printer kasir belum diset');
-                return;
-            }
-
-            // ambil printer pertama (kasir)
-            const printerName = window.cashierPrinters[0];
-
-            // connect QZ kalau belum
-            if (!qz.websocket.isActive()) {
-                await qz.websocket.connect();
-            }
-
-            const config = qz.configs.create(printerName, {
-                encoding: 'UTF-8'
-            });
-
-            const data = [
-                {
-                    type: 'raw',
-                    format: 'command',
-                    data: escposText
-                }
-            ];
-
-            try {
-                await qz.print(config, data);
-                console.log('✅ Struk tercetak');
-            } catch (err) {
-                console.error('❌ Gagal cetak', err);
-                alert('Gagal cetak struk');
             }
         }
 

@@ -20,7 +20,7 @@ class VendorController extends Controller
      */
     public function index()
     {
-        $vendors = Vendor::where('business_id', Auth::user()->business_id)->latest()->paginate();
+        $vendors = Vendor::where('outlet_id', active_outlet_id())->latest()->paginate();
 
         $ingredients = Ingredient::where('outlet_id', active_outlet_id())->latest()->get();
 
@@ -42,6 +42,7 @@ class VendorController extends Controller
         DB::beginTransaction();
         $vendor = Vendor::create([
             'business_id'   => Auth::user()->business_id,
+            'outlet_id'     => active_outlet_id(),
             'name'          => $request->name,
             'phone_number'  => $request->phone_number,
             'address'       => $request->address,

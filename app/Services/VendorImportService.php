@@ -21,7 +21,7 @@ class VendorImportService
     public function import(string $filePath, int $businessId, int $outletId): array
     {
         $import = new IngredientImport();
-        Excel::import($import, $filePath);
+        Excel::import($import, $filePath,null,\Maatwebsite\Excel\Excel::XLSX);
 
         $rows = $import->getRows();
 
@@ -63,6 +63,7 @@ class VendorImportService
                 // Cari atau buat vendor (match by name + phone per business)
                 $vendor = Vendor::firstOrNew([
                     'business_id' => $businessId,
+                    'outlet_id' => active_outlet_id(),
                     'name' => $namaVendor,
                 ]);
 

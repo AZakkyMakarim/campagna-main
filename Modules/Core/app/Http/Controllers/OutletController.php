@@ -57,7 +57,6 @@ class OutletController extends Controller
                         ->where('business_id', $business->id),
                 ],
                 'name'          => 'required|string',
-                'type'          => 'required|string',
                 'address'       => 'required|string',
                 'opening_hours' => 'required',
                 'closing_hours' => 'required',

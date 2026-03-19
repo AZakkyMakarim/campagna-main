@@ -23,9 +23,7 @@
             <thead class="bg-orange-700 text-white uppercase text-xs">
             <tr>
                 <th class="px-4 py-3">#</th>
-                <th class="px-4 py-3">Kode</th>
                 <th class="px-4 py-3">Nama Jenis</th>
-                <th class="px-4 py-3">Tipe</th>
                 <th class="px-4 py-3">Deskripsi</th>
                 <th class="px-4 py-3">Status</th>
                 <th class="px-4 py-3 text-center"><i class="fa fa-spin fa-cog"></i> Aksi</th>
@@ -35,9 +33,7 @@
                 @foreach($orderTypes as $key => $orderType)
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-4 py-3">{{ $key + 1 + (((request('page') ?? 1) - 1) * 15) }}</td>
-                        <td class="px-4 py-3 text-nowrap">{{ $orderType->code }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ $orderType->name }}</td>
-                        <td class="px-4 py-3">{{ $orderType->type }}</td>
                         <td class="px-4 py-3">{{ $orderType->description }}</td>
                         <td class="px-4 py-3">
                             <label class="inline-flex items-center cursor-pointer">
@@ -80,28 +76,6 @@
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-2">Nama Jenis Order</label>
                     <input type="text" name="name" value="{{ old('name') }}" placeholder="Contoh: Dine-In Biasa, GoFood, Booking Meeting" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">Kode</label>
-                    <input type="text" name="code" value="{{ old('code') }}" placeholder="Contoh: DINEIN, GOFOOD, BOOKING_MEETING" class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Tipe Order
-                    </label>
-                    <div class="relative">
-                        <select name="type" class="w-full appearance-none p-2 pr-10 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm">
-                            <option value="" class="text-gray-400">
-                                Pilih tipe order
-                            </option>
-
-                            @foreach(['Dine-in', 'Takeaway', 'Booking'] as $type)
-                                <option value="{{ $type }}" @selected((old('type') ?? '') === $type)>
-                                    {{ $type }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-2">Deskripsi (Opsional)</label>
@@ -163,40 +137,6 @@
                                 placeholder="Contoh: Dine-In Biasa, GoFood, Booking Meeting"
                                 class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
                             >
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-2">Kode</label>
-                            <input
-                                type="text"
-                                name="code"
-                                x-model="form.code"
-                                placeholder="Contoh: DINEIN, GOFOOD, BOOKING_MEETING"
-                                class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
-                            >
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Tipe Order
-                            </label>
-                            <div class="relative">
-                                <select
-                                    name="type"
-                                    x-model="form.type"
-                                    class="w-full appearance-none p-2 pr-10 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm"
-                                >
-                                    <option value="" class="text-gray-400">
-                                        Pilih order
-                                    </option>
-
-                                    @foreach(['Dine-in', 'Takeaway', 'Booking'] as $type)
-                                        <option value="{{ $type }}">
-                                            {{ $type }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
                         </div>
 
                         <div>

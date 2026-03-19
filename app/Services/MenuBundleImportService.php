@@ -23,7 +23,7 @@ class MenuBundleImportService
     public function import(string $filePath, int $businessId, int $outletId): array
     {
         $import = new IngredientImport();
-        Excel::import($import, $filePath);
+        Excel::import($import, $filePath,null,\Maatwebsite\Excel\Excel::XLSX);
 
         $rows = $import->getRows();
 

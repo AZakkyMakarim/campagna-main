@@ -101,6 +101,7 @@ class IngredientController extends Controller
             'file' => 'required|file|mimes:csv,txt,xlsx,xls',
         ]);
 
+
         $file = $request->file('file');
         $path = $file->getRealPath();
 
