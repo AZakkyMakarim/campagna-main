@@ -1605,3 +1605,7 @@ Thumbs.db
 /print_bridge/node_modules/wrappy/wrappy.js
 /print_bridge/node_modules/.package-lock.json
 /print_bridge/jobs.json
+
+/_bmad
+/_bmad-output
+/.agent

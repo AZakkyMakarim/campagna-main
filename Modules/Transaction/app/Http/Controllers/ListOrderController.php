@@ -4,6 +4,7 @@ namespace Modules\Transaction\Http\Controllers;
 
 use App\Events\OrderCreated;
 use App\Http\Controllers\Controller;
+use App\Models\CashMovement;
 use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderAdjustment;
@@ -206,43 +207,68 @@ class ListOrderController extends Controller
 
         try {
             $order = Order::with('payments')->findOrFail($request->order_id);
+            $payments = $request->payments; // [{method, amount}, ...]
 
-            $totalPaid = $order->payments()->sum('amount');
-            $remaining = $order->grand_total - $totalPaid;
-
-            if ($request->amount <= 0) {
-                throw new \Exception('Nominal tidak valid');
+            if (empty($payments)) {
+                throw new \Exception('Data pembayaran tidak boleh kosong');
             }
 
-            Payment::create([
-                'payable_type'  => Order::class,
-                'payable_id'    => $order->id,
-                'cashier_id'    => auth()->id(),
-                'type'          => 'ORDER',
-                'method'        => $request->method,
-                'amount'        => $request->amount,
-                'paid_at'       => now(),
-            ]);
+            $totalNewPayment = collect($payments)->sum('amount');
+            if ($totalNewPayment <= 0) {
+                throw new \Exception('Total pembayaran tidak valid');
+            }
 
-            $newTotalPaid = $totalPaid + $request->amount;
+            foreach ($payments as $p) {
+                Payment::create([
+                    'payable_type' => Order::class,
+                    'payable_id'   => $order->id,
+                    'cashier_id'   => auth()->id(),
+                    'type'         => 'ORDER',
+                    'method'       => $p['method'],
+                    'amount'       => $p['amount'],
+                    'paid_at'      => now(),
+                ]);
+
+                CashMovement::create([
+                    'cashier_shift_id' => active_shift()->id,
+                    'outlet_id'        => active_outlet_id(),
+                    'user_id'          => auth()->id(),
+                    'type'             => 'IN',
+                    'category'         => 'ORDER',
+                    'amount'           => $p['amount'],
+                    'description'      => 'Pembelian Produk - ' . $p['method'],
+                ]);
+            }
+
+            $newTotalPaid = $order->fresh()->payments()->sum('amount');
 
             if ($newTotalPaid >= $order->grand_total) {
                 $order->update([
-                    'payment_status'    => 'PAID',
-                    'status'            => 'COMPLETED',
-                    'closed_at'         => now(),
+                    'payment_status' => 'PAID',
+                    'status'         => 'COMPLETED',
+                    'closed_at'      => now(),
                 ]);
             } else {
-                $order->update([
-                    'payment_status'    => 'PARTIAL',
-                ]);
+                $order->update(['payment_status' => 'PARTIAL']);
             }
+
+            // Hitung kembalian dari metode Tunai
+            $alreadyPaidNonCash = $order->fresh()->payments()
+                ->whereNotIn('method', ['CASH', 'TUNAI'])
+                ->sum('amount');
+            $cashPaid = collect($payments)
+                ->filter(fn($p) => in_array(strtoupper($p['method']), ['CASH', 'TUNAI']))
+                ->sum('amount');
+            
+            $remaining = max(0, $order->grand_total - $alreadyPaidNonCash - $cashPaid);
+            $change = max(0, $cashPaid - $remaining);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'change' => max(0, $request->amount - $remaining),
+                'change'  => $change,
+                'payment_status' => $order->fresh()->payment_status,
             ]);
 
         } catch (\Throwable $e) {

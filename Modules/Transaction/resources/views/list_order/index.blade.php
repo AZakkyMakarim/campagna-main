@@ -203,6 +203,10 @@
                             paid_amount: {{ $order->paid_amount }},
                             sub_total: {{ $order->sub_total }},
                             grand_total: {{ $order->grand_total }},
+                            payments: {{ $order->payments->map(fn($p) => [
+                                'method' => $p->method,
+                                'amount' => $p->amount,
+                            ])->values()->toJson() }},
                         }
                     })"
                 >
@@ -450,11 +454,23 @@
                                 <span class="font-semibold text-orange-600" x-text="formatRp(payload?.grand_total)"></span>
                             </div>
 
-                            <!-- SUDAH BAYAR -->
-                            <div class="flex justify-between text-sm text-gray-600">
-                                <span>Sudah Dibayar</span>
-                                <span x-text="formatRp(payload?.paid_amount ?? 0)"></span>
-                            </div>
+                            {{-- PEMBAYARAN PER METODE --}}
+                            <template x-if="payload?.payments?.length">
+                                <div class="space-y-1">
+                                    <template x-for="(p, i) in payload.payments" :key="i">
+                                        <div class="flex justify-between text-sm text-gray-600">
+                                            <span x-text="p.method"></span>
+                                            <span class="font-medium" x-text="formatRp(p.amount)"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                            <template x-if="!payload?.payments?.length">
+                                <div class="flex justify-between text-sm text-gray-600">
+                                    <span>Sudah Dibayar</span>
+                                    <span x-text="formatRp(payload?.paid_amount ?? 0)"></span>
+                                </div>
+                            </template>
 
                             <!-- SISA -->
                             <div class="flex justify-between text-lg font-bold">
@@ -543,30 +559,142 @@
                 </div>
 
                 <!-- MODE -->
-                {{--            <div class="space-y-2">--}}
-                {{--                <label class="text-sm font-medium">Mode Pembayaran</label>--}}
-                {{--                <div class="grid grid-cols-2 gap-2">--}}
-                {{--                    <button--}}
-                {{--                        type="button"--}}
-                {{--                        @click="setPaymentMode('FULL')"--}}
-                {{--                        :class="paymentMode==='FULL' ? 'bg-orange-600 text-white' : 'border'"--}}
-                {{--                        class="rounded-md py-2 text-sm font-semibold"--}}
-                {{--                    >--}}
-                {{--                        Bayar Lunas--}}
-                {{--                    </button>--}}
-                {{--                    <button--}}
-                {{--                        type="button"--}}
-                {{--                        @click="setPaymentMode('DP')"--}}
-                {{--                        :class="paymentMode==='DP' ? 'bg-orange-600 text-white' : 'border'"--}}
-                {{--                        class="rounded-md py-2 text-sm font-semibold"--}}
-                {{--                    >--}}
-                {{--                        DP--}}
-                {{--                    </button>--}}
-                {{--                </div>--}}
-                {{--            </div>--}}
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Mode Pembayaran</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button
+                            type="button"
+                            @click="setPaymentMode('FULL')"
+                            :class="paymentMode==='FULL' ? 'bg-orange-600 text-white' : 'border'"
+                            class="rounded-md py-2 text-sm font-semibold"
+                        >
+                            Bayar Lunas
+                        </button>
+                        <button
+                            type="button"
+                            @click="setPaymentMode('SPLIT')"
+                            :class="paymentMode==='SPLIT' ? 'bg-orange-600 text-white' : 'border'"
+                            class="rounded-md py-2 text-sm font-semibold"
+                        >
+                            Split
+                        </button>
+                    </div>
+                </div>
+
+                {{-- SPLIT UI --}}
+                <div x-show="paymentMode === 'SPLIT'" class="space-y-3 mt-2">
+                    <template x-for="(split, i) in splits" :key="i">
+                        <div
+                            class="rounded-xl border p-3 space-y-2 transition-all"
+                            :class="split.confirmed ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'"
+                        >
+                            {{-- HEADER BARIS --}}
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold text-gray-500" x-text="`Metode ${i + 1}`"></span>
+                                <div class="flex items-center gap-1">
+                                    <span
+                                        x-show="split.confirmed"
+                                        class="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full flex items-center gap-1"
+                                    >
+                                        <i class="fa fa-check"></i> Terkonfirmasi
+                                    </span>
+                                    <button
+                                        type="button"
+                                        x-show="split.confirmed"
+                                        @click="unconfirmSplit(i)"
+                                        class="text-xs text-orange-500 hover:text-orange-700 px-1"
+                                        title="Batalkan konfirmasi"
+                                    >
+                                        <i class="fa fa-rotate-left"></i>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        x-show="!split.confirmed && splits.length > 1"
+                                        @click="removeSplit(i)"
+                                        class="text-red-400 hover:text-red-600 px-1"
+                                        title="Hapus baris"
+                                    >
+                                        <i class="fa fa-trash text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- METODE + NOMINAL --}}
+                            <div class="flex gap-2 items-center">
+                                <select
+                                    x-model="split.method"
+                                    :disabled="split.confirmed"
+                                    class="border rounded-lg px-2 py-2 flex-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 text-gray-700 disabled:bg-gray-100"
+                                >
+                                    <option value="">Pilih Metode</option>
+                                    <option value="CASH">Cash / Tunai</option>
+                                    <option value="QRIS">QRIS</option>
+                                    <option value="CARD">Kartu Debit/Kredit</option>
+                                    <option value="TRANSFER">Transfer Bank</option>
+                                </select>
+                                <input
+                                    type="text" inputmode="numeric"
+                                    :disabled="split.confirmed"
+                                    :value="split.amount ? split.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.') : ''"
+                                    @input="
+                                        const clean = $event.target.value.replace(/[^0-9]/g,'');
+                                        split.amount = Number(clean);
+                                        $event.target.value = split.amount ? split.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.') : '';
+                                    "
+                                    placeholder="Nominal"
+                                    class="border rounded-lg px-2 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-orange-400 text-gray-700 disabled:bg-gray-100"
+                                />
+                            </div>
+
+                            {{-- TOMBOL KONFIRMASI --}}
+                            <button
+                                type="button"
+                                x-show="!split.confirmed"
+                                @click="confirmSplit(i)"
+                                class="w-full py-2 rounded-lg text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 transition flex items-center justify-center gap-2"
+                            >
+                                <i class="fa fa-check"></i>
+                                Konfirmasi Sudah Dibayar
+                            </button>
+
+                            {{-- KEMBALIAN PER BARIS TUNAI --}}
+                            <div
+                                x-show="split.confirmed && ['CASH','TUNAI'].includes(split.method.toUpperCase()) && splitRemainingAmount() < 0"
+                                class="text-xs text-green-700 bg-green-100 rounded px-2 py-1 text-center"
+                            >
+                                Kembalian: <span x-text="formatRp(Math.abs(splitRemainingAmount()))"></span>
+                            </div>
+                        </div>
+                    </template>
+
+                    {{-- RINGKASAN SPLIT --}}
+                    <div class="bg-gray-50 rounded-xl p-3 space-y-1 text-sm border">
+                        <div class="flex justify-between text-gray-500">
+                            <span>Sudah Dikonfirmasi</span>
+                            <span x-text="formatRp(splitConfirmedTotal())"></span>
+                        </div>
+                        <div
+                            class="flex justify-between font-bold text-base"
+                            :class="splitRemainingAmount() > 0 ? 'text-red-500' : 'text-green-600'"
+                        >
+                            <span x-text="splitRemainingAmount() > 0 ? 'Sisa yang perlu dibayar' : 'Lunas ✓'"></span>
+                            <span x-text="formatRp(splitRemainingAmount())"></span>
+                        </div>
+                    </div>
+
+                    {{-- TAMBAH METODE --}}
+                    <button
+                        type="button"
+                        x-show="splitRemainingAmount() > 0"
+                        @click="addSplit()"
+                        class="text-sm text-orange-600 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-50 w-full"
+                    >
+                        <i class="fa fa-plus mr-1"></i> Tambah Metode Pembayaran
+                    </button>
+                </div>
 
                 <!-- METHOD -->
-                <div class="space-y-2">
+                <div class="space-y-2" x-show="paymentMode !== 'SPLIT'">
                     <label class="text-sm font-medium">Metode</label>
                     <div class="grid grid-cols-3 gap-2">
                         <button @click="paymentMethod='CASH'"
@@ -592,8 +720,8 @@
                 </div>
 
                 <!-- AMOUNT -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium" x-text="paymentMode==='FULL' ? 'Uang Diterima' : 'Nominal DP'"></label>
+                <div class="space-y-2" x-show="paymentMode !== 'SPLIT'">
+                    <label class="text-sm font-medium">Uang Diterima</label>
                     <input
                         type="text"
                         inputmode="numeric"
@@ -610,19 +738,19 @@
                 </div>
 
                 <!-- QUICK -->
-                <div class="grid grid-cols-4 gap-2">
+                <div class="grid grid-cols-4 gap-2" x-show="paymentMode !== 'SPLIT'">
                     <template x-for="n in [50000,100000,200000,500000]" :key="n">
                         <button class="border rounded py-2" @click="payAmount=n" x-text="formatRp(n)"></button>
                     </template>
                 </div>
 
-                <button class="w-full border rounded py-2" @click="payAmount = remaining">
+                <button class="w-full border rounded py-2" @click="payAmount = remaining" x-show="paymentMode !== 'SPLIT'">
                     Uang Pas
                 </button>
 
                 <!-- CHANGE -->
                 <div class="bg-gray-100 rounded-lg p-3 text-center">
-                    <template x-if="paymentMode==='FULL'">
+                    <template x-if="paymentMode!=='DP'">
                         <p class="text-sm text-gray-500">Kembalian</p>
                     </template>
                     <template x-if="paymentMode==='DP'">
@@ -634,15 +762,18 @@
                     </p>
                 </div>
 
-                <!-- ACTION -->
+                {{-- ACTION --}}
                 <div class="flex gap-2">
                     <button class="flex-1 border rounded py-2" @click="close()">Batal</button>
                     <button
-                        class="flex-1 bg-orange-600 text-white rounded py-2"
-                        :disabled="payAmount <= 0"
+                        class="flex-1 text-white rounded py-2 transition font-semibold"
+                        :disabled="paymentMode === 'SPLIT' ? !allSplitConfirmed() : payAmount <= 0"
+                        :class="(paymentMode === 'SPLIT' ? !allSplitConfirmed() : payAmount <= 0)
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-orange-600 hover:bg-orange-500'"
                         @click="submitPayment()"
                     >
-                        <span x-text="paymentMode==='DP' ? 'Bayar DP' : 'Bayar Sisa'"></span>
+                        <span x-text="paymentMode === 'SPLIT' ? (allSplitConfirmed() ? 'Simpan Pembayaran' : 'Konfirmasi dulu') : 'Bayar Sisa'"></span>
                     </button>
                 </div>
             </div>
@@ -805,11 +936,67 @@
                 paymentMode:'FULL',
                 paymentMethod:'CASH',
                 payAmount:0,
+                splits: [{ method: 'CASH', amount: 0, confirmed: false }],
+
+                addSplit() {
+                    const sisa = this.splitRemainingAmount();
+                    this.splits.push({ method: '', amount: sisa > 0 ? sisa : 0, confirmed: false });
+                },
+                removeSplit(i) {
+                    if (this.splits[i].confirmed) return;
+                    this.splits.splice(i, 1);
+                },
+                confirmSplit(i) {
+                    const split = this.splits[i];
+                    if (!split.method) {
+                        Swal.fire('Perhatian', 'Pilih metode pembayaran terlebih dahulu', 'warning');
+                        return;
+                    }
+                    if (!split.amount || split.amount <= 0) {
+                        Swal.fire('Perhatian', 'Masukkan nominal terlebih dahulu', 'warning');
+                        return;
+                    }
+                    split.confirmed = true;
+                    const sisa = this.splitRemainingAmount();
+                    const nextUnconfirmed = this.splits.findIndex((s, idx) => idx > i && !s.confirmed);
+                    if (nextUnconfirmed !== -1 && sisa > 0) {
+                        this.splits[nextUnconfirmed].amount = sisa;
+                    }
+                },
+                unconfirmSplit(i) {
+                    this.splits[i].confirmed = false;
+                },
+                splitConfirmedTotal() {
+                    return this.splits
+                        .filter(s => s.confirmed)
+                        .reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+                },
+                splitTotal() {
+                    return this.splits.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+                },
+                splitRemainingAmount() {
+                    return Math.max(0, this.remaining - this.splitConfirmedTotal());
+                },
+                splitRemaining() {
+                    const total = this.splitTotal();
+                    const remaining = this.remaining - total;
+                    return remaining;
+                },
+                allSplitConfirmed() {
+                    return this.splits.length > 0 &&
+                           this.splits.every(s => s.confirmed) &&
+                           this.splitConfirmedTotal() >= this.remaining;
+                },
 
                 get change(){
 
                     if(this.paymentMode === 'DP'){
                         return this.payAmount - this.remaining;
+                    }
+
+                    if (this.paymentMode === 'SPLIT') {
+                        const rem = this.splitRemaining();
+                        return rem < 0 ? Math.abs(rem) : 0;
                     }
 
                     return Math.max(0, this.payAmount - this.remaining);
@@ -845,6 +1032,10 @@
                         this.payAmount = 0;
                     }
 
+                    if (mode === 'SPLIT') {
+                        this.splits = [{ method: 'CASH', amount: this.remaining, confirmed: false }];
+                    }
+
                 },
 
                 formatRp(n){
@@ -863,8 +1054,9 @@
                             },
                             body: JSON.stringify({
                                 order_id:this.order.id,
-                                method:this.paymentMethod,
-                                amount:this.payAmount
+                                payments: this.paymentMode === 'SPLIT' 
+                                    ? this.splits 
+                                    : [{ method: this.paymentMethod, amount: this.payAmount }]
                             })
                         });
 
