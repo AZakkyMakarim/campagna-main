@@ -17,6 +17,8 @@ class Picture extends Model
         'caption',
     ];
 
+    protected $appends = ['url'];
+
     public function pictureable()
     {
         return $this->morphTo();

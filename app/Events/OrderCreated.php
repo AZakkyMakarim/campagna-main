@@ -39,7 +39,7 @@ class OrderCreated implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new Channel('kds');
+        return new Channel('kds', $this->order->outlet_id);
     }
 
     public function broadcastAs()

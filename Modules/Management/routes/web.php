@@ -91,7 +91,11 @@ Route::domain('admin.' .config('app.domain'))->middleware(['auth', 'ensure.busin
                 Route::get('/nota', [CategoryAnalysisController::class, 'nota'])->name('management.purchasing.sales.category_analysis.nota');
                 Route::get('/menu', [CategoryAnalysisController::class, 'menu'])->name('management.purchasing.sales.category_analysis.menu');
                 Route::get('/payment-method', [CategoryAnalysisController::class, 'paymentMethod'])->name('management.purchasing.sales.category_analysis.payment_method');
-                Route::get('/order', [CategoryAnalysisController::class, 'order'])->name('management.purchasing.sales.category_analysis.order');
+
+                Route::prefix('order')->group(function (){
+                    Route::get('/', [CategoryAnalysisController::class, 'order'])->name('management.purchasing.sales.category_analysis.order');
+                    Route::get('/detail/{type}', [CategoryAnalysisController::class, 'detailOrder'])->name('management.purchasing.sales.category_analysis.order.detail-order');
+                });
 
                 Route::get('/get-order/{id}', [CategoryAnalysisController::class, 'getOrder'])->name('management.purchasing.sales.category_analysis.get-order');
             });

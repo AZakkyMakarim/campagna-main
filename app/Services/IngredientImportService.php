@@ -22,6 +22,7 @@ class IngredientImportService
     {
         // Use Maatwebsite Excel to import to collection
         try {
+
             // Check if file exists
             if (!file_exists($filePath)) {
                 return ['success' => 0, 'errors' => 1, 'messages' => ["File not found."]];
@@ -29,7 +30,7 @@ class IngredientImportService
 
             $import = new IngredientImport();
             // Store the imported data into the import object
-            Excel::import($import, $filePath);
+            Excel::import($import, $filePath,null,\Maatwebsite\Excel\Excel::XLSX);
 
             $rows = $import->getRows();
         } catch (\Exception $e) {

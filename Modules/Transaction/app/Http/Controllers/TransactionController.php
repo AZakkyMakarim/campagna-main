@@ -22,15 +22,17 @@ class TransactionController extends Controller
         $yesterday = Carbon::yesterday();
 
         // === STATS ===
-        $transactionsToday = Order::whereDate('created_at', $today)->count();
+        $transactionsToday = Order::whereDate('created_at', $today)->where('outlet_id', active_outlet_id())->count();
 
         $revenueToday = Order::whereDate('created_at', $today)
+            ->where('outlet_id', active_outlet_id())
             ->where('payment_status', 'PAID')
             ->sum('grand_total');
 
-        $ongoingOrders = Order::whereIn('status', ['OPEN', 'IN_PROGRESS'])->count();
+        $ongoingOrders = Order::whereIn('status', ['OPEN', 'IN_PROGRESS'])->where('outlet_id', active_outlet_id())->count();
 
         $revenueYesterday = Order::whereDate('created_at', $yesterday)
+            ->where('outlet_id', active_outlet_id())
             ->where('payment_status', 'PAID')
             ->sum('grand_total');
 
@@ -47,6 +49,9 @@ class TransactionController extends Controller
 
         // === TOP MENUS ===
         $topMenus = OrderItem::select('menu_id', DB::raw('SUM(qty) as total_sold'))
+            ->whereHas('order', function ($query){
+                $query->where('outlet_id', active_outlet_id());
+            })
             ->whereDate('created_at', $today)
             ->groupBy('menu_id')
             ->orderByDesc('total_sold')
@@ -62,6 +67,7 @@ class TransactionController extends Controller
 
         // === LOW STOCK ===
         $lowStocks = Ingredient::withSum('batches as total_stock', 'qty_remaining')
+            ->where('outlet_id', active_outlet_id())
             ->having('total_stock', '<', 10)
             ->orderBy('total_stock', 'asc')
             ->limit(5)
@@ -71,7 +77,7 @@ class TransactionController extends Controller
         $paymentMethods = Payment::select('method', DB::raw('SUM(amount) as total'))
             ->whereDate('paid_at', $today)   // atau created_at, tergantung lu simpan di mana
             ->whereHasMorph('payable', Order::class, function ($q) {
-                $q->where('payment_status', 'PAID');  // pastiin ordernya valid
+                $q->where('outlet_id', active_outlet_id())->where('payment_status', 'PAID');  // pastiin ordernya valid
             })
             ->groupBy('method')
             ->orderByDesc('total')
@@ -82,6 +88,7 @@ class TransactionController extends Controller
             DB::raw('HOUR(created_at) as hour'),
             DB::raw('SUM(grand_total) as total')
         )
+            ->where('outlet_id', active_outlet_id())
             ->whereDate('created_at', $today)
             ->where('payment_status', 'PAID')
             ->groupBy(DB::raw('HOUR(created_at)'))
@@ -89,6 +96,7 @@ class TransactionController extends Controller
             ->get();
 
         $ongoingOrders = Order::with('items')
+            ->where('outlet_id', active_outlet_id())
             ->whereIn('status', ['OPEN', 'IN_PROGRESS', 'READY'])
             ->orderBy('opened_at', 'asc')
             ->limit(10) // ambil dikit aja, nanti di view dipotong 5

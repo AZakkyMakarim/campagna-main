@@ -43,7 +43,7 @@
     </table>
     @if($finisheds->hasPages())
         <div class="px-5 py-4 border-t border-gray-200">
-            {{ $finisheds->links() }}
+            {{ $finisheds->appends(Request::except('page'))->links() }}
         </div>
     @endif
 </div>

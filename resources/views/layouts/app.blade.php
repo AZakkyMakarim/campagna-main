@@ -12,13 +12,13 @@
 <body class="bg-gray-50 text-gray-900">
 
 <div x-data="{ activeModule: '{{ @$activeModule }}', activeMenu: '{{ @$activeMenu }}', activeSubmenu: '{{ @$activeSubmenu }}' }" class="min-h-screen flex flex-col bg-background">
-    <div class="flex flex-1 overflow-hidden" x-data="{ sidebarOpen: true }">
+    <div class="flex flex-1 overflow-hidden" x-data="{ sidebarOpen: false }">
         <aside
             x-show="sidebarOpen && activeModule"
             x-transition
             class="w-64 p-4 border-r border-gray-300 bg-white flex flex-col"
         >
-            <div class="flex-1 overflow-y-auto">
+            <div class="flex-1 overflow-y-auto hide-scrollbar">
                 <template x-if="activeModule === 'core'">
                     <div class="flex flex-col space-y-2">
                         <h4 class="uppercase mb-3 h-8 flex items-center font-bold justify-center">Core</h4>
@@ -382,6 +382,33 @@
                             </a>
                         </div>
 
+                        <div x-data="{ open: activeMenu === 'inventory' }">
+                            <button
+                                @click="open = !open"
+                                class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-colors"
+                                :class="open ? 'text-orange-600' : 'text-gray-700'"
+                            >
+                                <div class="flex items-center gap-3">
+                                    <i class="fa fa-boxes-stacked"></i>
+                                    <span class="font-medium">Inventory</span>
+                                </div>
+                                <i :class="open ? 'fa fa-chevron-down' : 'fa fa-chevron-right'"></i>
+                            </button>
+
+                            <ul x-show="open" x-transition class="mt-1 ml-4 pl-4 border-l border-gray-300 space-y-1">
+                                <li>
+                                    <a
+                                        href="{{ route('transaction.inventory.stock') }}"
+                                        class="block px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-orange-500 hover:text-white"
+                                        :class="{ 'bg-orange-500 text-white': activeSubmenu === 'stock' }"
+                                        @click="activeSubmenu = 'stock'"
+                                    >
+                                        Stok
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
                         <div class="space-y-2 mt-4">
                             <a href="{{ route('transaction.shift') }}"
                                @click="activeMenu = 'shift'"
@@ -389,6 +416,16 @@
                                class="flex items-center gap-2 px-3 py-2 rounded-xl">
                                 <i class="fa fa-clock"></i>
                                 <span>Shift</span>
+                            </a>
+                        </div>
+
+                        <div class="space-y-2 mt-4">
+                            <a href="{{ route('transaction.printer-struck') }}"
+                               @click="activeMenu = 'printer-struck'"
+                               :class="activeMenu === 'printer-struck' ? 'bg-orange-600 text-white font-medium' : 'hover:text-white hover:bg-orange-500'"
+                               class="flex items-center gap-2 px-3 py-2 rounded-xl">
+                                <i class="fa fa-print"></i>
+                                <span>Printer & Struk</span>
                             </a>
                         </div>
                     </div>
@@ -497,6 +534,18 @@
     </footer>
 </div>
 
+@push('css')
+    <style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+@endpush
 
 @vite('resources/js/app.js')
 <x-alert />

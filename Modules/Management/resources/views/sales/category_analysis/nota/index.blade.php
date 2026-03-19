@@ -21,12 +21,91 @@
         </div>
     </div>
 
+    <div class="bg-white border rounded-xl p-4 mb-4 shadow-sm">
+        <form method="GET" class="flex items-center gap-2">
+
+            <!-- SEARCH -->
+            <div>
+                <input
+                    type="text"
+                    name="code"
+                    value="{{ request('code') }}"
+                    placeholder="Cari kode order"
+                    {{--                    @focus="setActiveInput($event.target)"--}}
+                    class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+            </div>
+
+            <div class="">
+                <select
+                    name="payment_methods[]"
+                    multiple
+                    class="select2 w-full"
+                    data-placeholder="Metode Pembayaran"
+                >
+                    <option value="CASH" @selected(in_array('CASH', request('payment_methods', [])))>CASH</option>
+                    <option value="QRIS" @selected(in_array('QRIS', request('payment_methods', [])))>QRIS</option>
+                    <option value="CARD" @selected(in_array('CARD', request('payment_methods', [])))>CARD</option>
+                </select>
+            </div>
+
+            <div class="space-y-1">
+                <select
+                    name="order_types[]"
+                    multiple
+                    class="select2 w-full"
+                    data-placeholder="Jenis Order"
+                >
+                    @foreach(\App\Models\OrderType::get() as $type)
+                        <option value="{{ $type->name }}" {{ in_array($type->menu, request('order_types', [])) }}>{{ $type->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="relative">
+
+                <input
+                    type="text"
+                    name="date_range_order"
+                    id="date_range"
+                    value="{{ request('date_range_order') }}"
+                    placeholder="Pilih periode"
+                    class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                >
+
+                <i class="fa fa-calendar absolute right-3 top-2.5 text-gray-400"></i>
+
+            </div>
+
+
+            <!-- BUTTON -->
+            <div class="flex gap-2">
+                <button
+                    type="submit"
+                    class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-500"
+                >
+                    Filter
+                </button>
+
+                <a
+                    href="{{ url()->current() }}"
+                    class="px-4 py-2 border rounded-lg hover:bg-gray-100"
+                >
+                    Reset
+                </a>
+            </div>
+
+        </form>
+    </div>
+
     <div class="overflow-hidden rounded-lg shadow-lg border border-gray-200 bg-white">
         <table class="w-full text-sm text-left">
             <thead class="bg-orange-700 text-white uppercase text-xs">
             <tr>
                 <th class="px-4 py-3">#</th>
                 <th class="px-4 py-3">No. Nota</th>
+                <th class="px-4 py-3">Metode Pembayaran</th>
+                <th class="px-4 py-3">Jenis Order</th>
                 <th class="px-4 py-3">Tanggal Transaksi</th>
                 <th class="px-4 py-3">Total HPP</th>
                 <th class="px-4 py-3">Total Harga Jual</th>
@@ -38,11 +117,13 @@
             @foreach($sales as $key => $sale)
                 @php
                     $hpp = @$sale->calculateHpp();
-                    $pay = @$sale->paid_amount;
+                    $pay = @$sale->grand_total;
                 @endphp
                 <tr class="hover:bg-gray-50 transition">
                     <td class="px-4 py-3">{{ $key + 1 + (((request('page') ?? 1) - 1) * 15) }}</td>
                     <td class="px-4 py-3 text-nowrap">{{ $sale->code }}</td>
+                    <td class="px-4 py-3 text-nowrap">{{ $sale->payment->method }}</td>
+                    <td class="px-4 py-3 text-nowrap">{{ $sale->type }}</td>
                     <td class="px-4 py-3 text-nowrap">{{ parse_date_time($sale->created_at) }}</td>
                     <td class="px-4 py-3 text-nowrap">{{ rp_format($hpp) }}</td>
                     <td class="px-4 py-3 text-nowrap">{{ rp_format($pay) }}</td>
@@ -58,6 +139,11 @@
             @endforeach
             </tbody>
         </table>
+        @if($sales->hasPages())
+            <div class="px-5 py-4 border-t border-gray-200">
+                {{ $sales->appends(Request::except('page'))->links() }}
+            </div>
+        @endif
     </div>
 
     <div
@@ -208,6 +294,21 @@
                             </span>
                         </div>
 
+                        <!-- PEMBAYARAN -->
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Pembayaran</span>
+                            <span x-text="formatRp(paidAmount)"></span>
+                        </div>
+
+                        <!-- KEMBALIAN -->
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Kembalian</span>
+                            <span
+                                :class="change < 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'"
+                                x-text="formatRp(change)">
+                            </span>
+                        </div>
+
                         <hr>
 
                         <div class="flex justify-between text-sm">
@@ -229,8 +330,37 @@
 </div>
 @endsection
 
+@push('css')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_orange.css">
+@endpush
+
 @push('js')
-    <script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <script !src="">
+        document.addEventListener("DOMContentLoaded", function () {
+
+            flatpickr("#date_range", {
+
+                mode: "range",
+
+                dateFormat: "Y-m-d",
+
+                allowInput: true,
+
+                onClose: function(selectedDates, dateStr, instance) {
+
+                    // otomatis submit kalau mau
+                    // instance.element.form.submit();
+
+                }
+
+            });
+
+        });
+
         window.orderConfig = @json(config('array.order'));
 
         const orderDetailUrlTemplate = "{{ route('management.purchasing.sales.category_analysis.get-order', ':id') }}";
@@ -294,6 +424,8 @@
                             this.grandTotal = Number(data.grand_total || 0);
                             this.paidAmount = Number(data.paid_amount || 0);
                             this.hppTotal = Number(data.hpp_total || 0);
+
+                            console.log(data);
 
                             this.orderType = data.type;
                             this.orderChannel = data.channel;
@@ -433,6 +565,10 @@
                     // kalau ada logic pembulatan custom, taro sini.
                     // default: 0
                     return 0;
+                },
+
+                get change() {
+                    return this.paidAmount - this.finalTotal();
                 },
 
                 finalTotal() {

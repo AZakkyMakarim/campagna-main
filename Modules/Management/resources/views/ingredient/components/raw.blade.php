@@ -52,7 +52,7 @@
     </table>
     @if($raws->hasPages())
         <div class="px-5 py-4 border-t border-gray-200">
-            {{ $raws->links() }}
+            {{ $raws->appends(Request::except('page'))->links() }}
         </div>
     @endif
 </div>

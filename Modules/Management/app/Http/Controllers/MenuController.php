@@ -8,7 +8,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Ingredient;
 use App\Models\Menu;
 use App\Models\MenuComponent;
+use App\Models\Outlet;
 use App\Models\Recipe;
+use App\Services\ExportService;
 use App\Services\MenuBundleImportService;
 use App\Services\MenuSingleImportService;
 use Illuminate\Http\Request;
@@ -27,7 +29,7 @@ class MenuController extends Controller
 
         $categories = (clone $rawMenus)->pluck('category')->unique();
 
-        $menus = (clone $rawMenus)->where('type', 'single')->paginate();
+        $menus = (clone $rawMenus)->where('type', 'single')->paginate(1000);
 
         $ingredients = Ingredient::query()
             ->where('outlet_id', active_outlet_id())
@@ -39,7 +41,23 @@ class MenuController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('management::menu.single.index', compact('ingredients', 'menus', 'categories'));
+        $currentQueries = \request()->query();
+        $xls = ['download' => 'XLS'];
+        $xlsQ = array_merge($currentQueries, $xls);
+        $xlsUrl = \request()->fullUrlWithQuery($xlsQ);
+
+        if (request('download')) {
+            if (\request()->download == 'XLS') {
+                $title = 'Daftar Menu';
+                $outlet = Outlet::find(active_outlet_id())->name;
+
+                $export = new ExportService($rawMenus->get(), 'management::menu.single.xls', ['thead_rows' => 3, 'outlet' => $outlet, 'title' => $title]);
+
+                return Excel::download($export, $title.'.xls');
+            }
+        }
+
+        return view('management::menu.single.index', compact('ingredients', 'menus', 'categories', 'xlsUrl'));
     }
 
     public function bundle()
@@ -76,7 +94,6 @@ class MenuController extends Controller
         $request->validate([
             'name'       => 'required|string|max:255',
             'sku'        => 'required|string|max:100|unique:menus,sku',
-            'category'   => 'required|in:makanan,minuman',
             'sell_price' => 'required|numeric|min:0',
             'type'       => 'required|in:single,bundle',
             'components' => 'required|array|min:1',
@@ -98,6 +115,10 @@ class MenuController extends Controller
                 'hpp'         => $request->hpp,
                 'sell_price'  => $request->sell_price,
             ]);
+
+            if ($request->attachment){
+                insert_picture($request->attachment, $menu, 'menu '.$request->type);
+            }
 
             // =========================
             // CREATE MENU COMPONENTS (POLYMORPH)
@@ -161,6 +182,10 @@ class MenuController extends Controller
 
         try {
             $menu->update($request->all());
+
+            if ($request->attachment){
+                insert_picture($request->attachment, $menu, 'menu '.$request->type);
+            }
 
             if ($request->components) {
                 $menu->components()->delete();
@@ -276,5 +301,5 @@ class MenuController extends Controller
         return Excel::download(new MenuBundleTemplateExport, 'template_import_paket_bundle.xlsx');
     }
 
-    
+
 }

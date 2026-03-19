@@ -21,6 +21,10 @@ class Reservation extends Model
         return $this->belongsTo(Outlet::class);
     }
 
+    public function order() {
+        return $this->hasOne(Order::class);
+    }
+
     public function orders() {
         return $this->hasMany(Order::class);
     }
