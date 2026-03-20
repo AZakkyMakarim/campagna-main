@@ -3,6 +3,7 @@
 namespace Modules\Management\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Outlet;
@@ -86,6 +87,7 @@ class CategoryAnalysisController extends Controller
             ->groupBy('menu_id')
             ->orderByDesc('qty_terjual');
 
+        $categories = Menu::where('outlet_id', active_outlet_id())->pluck('category')->unique();
 
         $currentQueries = \request()->query();
         $xls = ['download' => 'XLS'];
@@ -116,7 +118,7 @@ class CategoryAnalysisController extends Controller
 
         $sales = $raw->paginate();
 
-        return view('management::sales.category_analysis.menu.index', compact('sales', 'xlsUrl'));
+        return view('management::sales.category_analysis.menu.index', compact('sales', 'categories', 'xlsUrl'));
     }
 
     public function paymentMethod(){

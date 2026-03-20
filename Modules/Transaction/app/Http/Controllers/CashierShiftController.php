@@ -5,7 +5,9 @@ namespace Modules\Transaction\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\CashierShift;
 use App\Models\CashMovement;
+use App\Models\Order;
 use App\Models\Outlet;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,11 +21,24 @@ class CashierShiftController extends Controller
     {
         $outlet = Outlet::find(active_outlet_id());
 
+        $ongoingOrders = 0;
+        if (active_shift()){
+            $startDate = Carbon::parse(active_shift()->opened_at)->startOfDay();
+            $endDate = Carbon::parse(@active_shift()->closed_at ?? now())->startOfDay();
+
+            $ongoingOrders = Order::with('items')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->where('outlet_id', active_outlet_id())
+                ->whereIn('status',['OPEN','IN_PROGRESS','READY'])
+                ->count();
+        }
+
         $rawCashierShift = CashierShift::where('outlet_id', $outlet->id)
             ->where('user_id', \auth()->user()->id);
 
         $cashierShift = (clone $rawCashierShift)->where('status', 'OPEN')->first();
         $histories = (clone $rawCashierShift)->whereDate('opened_at', now())->get();
+
 
         $cashIn = collect();
         $cashOut = collect();
@@ -47,7 +62,7 @@ class CashierShiftController extends Controller
                 ->get();
         }
 
-        return view('transaction::shift.index', compact('outlet', 'cashierShift', 'cashIn', 'cashOut', 'pettyCash', 'histories'));
+        return view('transaction::shift.index', compact('outlet', 'cashierShift', 'ongoingOrders', 'cashIn', 'cashOut', 'pettyCash', 'histories'));
     }
 
     public function open()
@@ -117,6 +132,20 @@ class CashierShiftController extends Controller
 
     public function close(Request $request, CashierShift $shift)
     {
+        $startDate = Carbon::parse($shift->opened_at)->startOfDay();
+        $endDate = Carbon::parse(@$shift->closed_at ?? now())->startOfDay();
+
+        $ongoingOrders = Order::with('items')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->where('outlet_id', active_outlet_id())
+            ->whereIn('status',['OPEN','IN_PROGRESS','READY'])
+            ->count();
+
+        if ($ongoingOrders > 0){
+            toast('Masih ada order berjalan!', 'warning');
+            return back();
+        }
+
         // 🔒 Pastikan shift masih OPEN
         if ($shift->status !== 'OPEN') {
             toast('Shift sudah ditutup', 'warning');

@@ -34,16 +34,57 @@
     </div>
 
     <div class="overflow-hidden rounded-lg shadow-lg border border-gray-200 bg-white">
+        @php
+            $icon = request('direction') === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
+        @endphp
+
         <table class="w-full text-sm text-left">
             <thead class="bg-orange-700 text-white uppercase text-xs">
             <tr>
                 <th class="px-4 py-3">#</th>
-                <th class="px-4 py-3">Nama Menu</th>
-                <th class="px-4 py-3">SKU</th>
-                <th class="px-4 py-3">Kategori</th>
+                <th class="px-4 py-3">
+                    <a href="{{ sort_link('name') }}" class="flex items-center gap-1">
+                        Nama Menu
+                        @if(request('sort') === 'name')
+                            <i class="fa {{ $icon }}"></i>
+                        @else
+                            <i class="fa fa-sort text-gray-400"></i>
+                        @endif
+                    </a>
+                </th>
+                <th class="px-4 py-3 text-center">Preview</th>
+                <th class="px-4 py-3">
+                    <a href="{{ sort_link('sku') }}" class="flex items-center gap-1">
+                        SKU
+                        @if(request('sort') === 'sku')
+                            <i class="fa {{ $icon }}"></i>
+                        @else
+                            <i class="fa fa-sort text-gray-400"></i>
+                        @endif
+                    </a>
+                </th>
+                <th class="px-4 py-3">
+                    <a href="{{ sort_link('category') }}" class="flex items-center gap-1">
+                        Kategori
+                        @if(request('sort') === 'category')
+                            <i class="fa {{ $icon }}"></i>
+                        @else
+                            <i class="fa fa-sort text-gray-400"></i>
+                        @endif
+                    </a>
+                </th>
                 <th class="px-4 py-3">Resep</th>
                 <th class="px-4 py-3">HPP</th>
-                <th class="px-4 py-3">Harga Jual</th>
+                <th class="px-4 py-3">
+                    <a href="{{ sort_link('sell_price') }}" class="flex items-center gap-1">
+                        Harga Jual
+                        @if(request('sort') === 'sell_price')
+                            <i class="fa {{ $icon }}"></i>
+                        @else
+                            <i class="fa fa-sort text-gray-400"></i>
+                        @endif
+                    </a>
+                </th>
                 <th class="px-4 py-3">Status</th>
                 <th class="px-4 py-3 text-center"><i class="fa fa-spin fa-cog"></i> Aksi</th>
             </tr>
@@ -53,6 +94,16 @@
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-4 py-3">{{ $key + 1 + (((request('page') ?? 1) - 1) * 10) }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ $menu->name }}</td>
+                        <td class="px-4 py-3 text-center">
+                            @if(!empty($menu->picture->url))
+                                <a href="{{ $menu->picture->url }}" target="_blank">
+                                    <img
+                                        src="{{ $menu->picture->url }}"
+                                        class="w-10 h-10 object-cover rounded hover:scale-110 transition"
+                                    >
+                                </a>
+                            @endif
+                        </td>
                         <td class="px-4 py-3 text-nowrap">{{ $menu->sku }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ strtoupper($menu->category) }}</td>
                         <td class="px-4 py-3 text-nowrap">{{ count($menu->components) }} Bahan</td>

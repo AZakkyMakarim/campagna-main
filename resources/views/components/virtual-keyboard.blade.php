@@ -1,10 +1,9 @@
 <div
     x-show="keyboardOpen"
-    x-transition
-    class="fixed bottom-4 z-50
-           bg-white/95 backdrop-blur
-           rounded-xl border shadow-2xl
-           w-[900px] max-w-[95vw]"
+    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50
+       bg-white/95 backdrop-blur
+       rounded-xl border shadow-2xl
+       w-[900px] max-w-[95vw]"
 >
 
     <!-- HEADER -->
@@ -100,15 +99,6 @@
         }
         .key-btn:hover {
             background: #fff7ed;
-        }
-
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
         }
     </style>
 @endpush

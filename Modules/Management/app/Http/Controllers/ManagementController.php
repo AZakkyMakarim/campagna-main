@@ -28,7 +28,7 @@ class ManagementController extends Controller
             $startDate = Carbon::parse($date['start_date'])->startOfDay();
             $endDate = Carbon::parse($date['end_date'])->endOfDay();
         } else {
-            $startDate = Carbon::today();
+            $startDate = Carbon::today()->startOfDay();
             $endDate   = Carbon::today()->endOfDay();
         }
 
@@ -38,17 +38,15 @@ class ManagementController extends Controller
 
         $transactionsToday = Order::whereBetween('created_at', [$startDate, $endDate])
             ->where('outlet_id', active_outlet_id())
+            ->where('status', 'COMPLETED')
             ->where('payment_status', 'PAID')
             ->count();
 
         $revenueToday = Order::whereBetween('created_at', [$startDate, $endDate])
             ->where('outlet_id', active_outlet_id())
+            ->where('status', 'COMPLETED')
             ->where('payment_status', 'PAID')
             ->sum('grand_total');
-
-        $ongoingOrders = Order::whereIn('status', ['OPEN','IN_PROGRESS','READY'])
-            ->where('outlet_id', active_outlet_id())
-            ->count();
 
         $avgTransaction = $transactionsToday > 0
             ? round($revenueToday / $transactionsToday)
@@ -64,6 +62,7 @@ class ManagementController extends Controller
         )
             ->whereBetween('created_at', [$startDate, $endDate])
             ->where('outlet_id', active_outlet_id())
+            ->where('status', 'COMPLETED')
             ->where('payment_status','PAID')
             ->groupBy(DB::raw('HOUR(created_at)'))
             ->orderBy('hour')
@@ -93,6 +92,7 @@ class ManagementController extends Controller
             ->join('menus','menus.id','=','order_items.menu_id')
             ->join('orders', function ($join) {
                 $join->on('orders.id', '=', 'order_items.order_id')
+                    ->where('orders.status', 'COMPLETED')
                     ->where('orders.outlet_id', active_outlet_id());
             })
             ->whereBetween('order_items.created_at',[$startDate,$endDate])
@@ -147,28 +147,34 @@ class ManagementController extends Controller
         // PAYMENT METHODS
         // ==============================
 
-        $paymentMethods = Payment::select(
-                'method',
-                DB::raw('SUM(amount) as total')
-            )
-            ->whereBetween('paid_at',[$startDate,$endDate])
-            ->join('orders', function ($join) {
+        $paymentMethods = Payment::query()
+            ->join('orders', function ($join) use ($startDate, $endDate) {
                 $join->on('orders.id', '=', 'payments.payable_id')
-                    ->where('orders.outlet_id', active_outlet_id())
-                    ->where('payments.payable_type', Order::class);
+                    ->where('payments.payable_type', Order::class)
+                    ->whereBetween('orders.created_at', [$startDate, $endDate])
+                    ->where('orders.status', 'COMPLETED')
+                    ->where('orders.outlet_id', active_outlet_id());
             })
-            ->groupBy('method')
+            ->whereNull('payments.deleted_at')
+            ->selectRaw("
+                payments.method,
+                COUNT(payments.id) as jumlah_transaksi,
+                SUM(orders.grand_total) as total_nominal
+            ")
+            ->groupBy('payments.method')
+            ->orderByDesc('total_nominal')
             ->get();
 
         $paymentMethods = $paymentMethods->map(function($p) use ($revenueToday){
 
             $percent = $revenueToday > 0
-                ? round(($p->total / $revenueToday) * 100,1)
+                ? round(($p->total_nominal / $revenueToday) * 100,1)
                 : 0;
 
             return (object)[
                 'method'=>$p->method,
-                'total'=>$p->total,
+                'total'=>$p->total_nominal,
+                'total_transaction'=>$p->jumlah_transaksi,
                 'percent'=>$percent
             ];
         });

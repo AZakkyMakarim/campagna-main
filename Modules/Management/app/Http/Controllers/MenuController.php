@@ -25,7 +25,22 @@ class MenuController extends Controller
      */
     public function single()
     {
-        $rawMenus = Menu::where('outlet_id', active_outlet_id())->latest();
+        $sort = request('sort', 'name');
+        $direction = request('direction', 'asc');
+
+        $allowedSort = [
+            'name',
+            'sku',
+            'category',
+            'sell_price',
+            'is_active'
+        ];
+
+        if (!in_array($sort, $allowedSort)) {
+            $sort = 'created_at';
+        }
+
+        $rawMenus = Menu::where('outlet_id', active_outlet_id())->orderBy($sort, $direction);
 
         $categories = (clone $rawMenus)->pluck('category')->unique();
 
@@ -97,6 +112,11 @@ class MenuController extends Controller
             'sell_price' => 'required|numeric|min:0',
             'type'       => 'required|in:single,bundle',
             'components' => 'required|array|min:1',
+            'attachment' => 'nullable|image|mimes:jpg,jpeg,png|max:300',
+            ],[
+            'attachment.image' => 'File harus berupa gambar.',
+            'attachment.mimes' => 'Format gambar harus JPG atau PNG.',
+            'attachment.max' => 'Ukuran gambar maksimal 300 KB.',
         ]);
 
         DB::beginTransaction();
@@ -151,7 +171,6 @@ class MenuController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            dd($e);
 
             toast('Gagal menyimpan menu: '.$e->getMessage(), 'error');
             return back();
@@ -181,6 +200,18 @@ class MenuController extends Controller
         DB::beginTransaction();
 
         try {
+            $request->validate([
+                'name'       => 'required|string|max:255',
+                'sell_price' => 'required|numeric|min:0',
+                'type'       => 'required|in:single,bundle',
+                'components' => 'required|array|min:1',
+                'attachment' => 'nullable|image|mimes:jpg,jpeg,png|max:300',
+            ],[
+                'attachment.image' => 'File harus berupa gambar.',
+                'attachment.mimes' => 'Format gambar harus JPG atau PNG.',
+                'attachment.max' => 'Ukuran gambar maksimal 300 KB.',
+            ]);
+
             $menu->update($request->all());
 
             if ($request->attachment){

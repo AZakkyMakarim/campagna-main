@@ -83,7 +83,15 @@
             </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
+            @php
+                $totalTrx = 0;
+                $totalNominal = 0;
+            @endphp
             @foreach($sales as $key => $sale)
+                @php
+                    $totalTrx += $sale->jumlah_transaksi;
+                    $totalNominal += $sale->total_nominal;
+                @endphp
                 <tr class="hover:bg-gray-50 transition">
                     <td class="px-4 py-3">{{ $key + 1 + (((request('page') ?? 1) - 1) * 15) }}</td>
                     <td class="px-4 py-3 text-nowrap">{{ $sale->method }}</td>
@@ -91,6 +99,11 @@
                     <td class="px-4 py-3 text-nowrap">{{ rp_format($sale->total_nominal) }}</td>
                 </tr>
             @endforeach
+            <tr class="bg-gray-200 font-semibold">
+                <td class="px-4 py-3" colspan="2">TOTAL</td>
+                <td class="px-4 py-3">{{ $totalTrx }}</td>
+                <td class="px-4 py-3">{{ rp_format($totalNominal) }}</td>
+            </tr>
             </tbody>
         </table>
 
