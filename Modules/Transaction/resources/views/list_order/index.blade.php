@@ -919,6 +919,44 @@
             return new Intl.NumberFormat('id-ID').format(n || 0);
         }
 
+        function showToast(message, type = 'success') {
+            const colors = {
+                success: { bg: '#fff7ed', border: '#fed7aa', icon: '\u2713', iconBg: '#ea580c', iconColor: '#fff', text: '#9a3412' },
+                error:   { bg: '#fef2f2', border: '#fecaca', icon: '\u2717', iconBg: '#dc2626', iconColor: '#fff', text: '#991b1b' },
+            };
+            const c = colors[type] || colors.success;
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position:fixed; bottom:24px; right:24px; z-index:9999;
+                display:flex; align-items:center; gap:12px;
+                background:${c.bg}; border:1px solid ${c.border}; color:${c.text};
+                padding:12px 20px; border-radius:12px;
+                box-shadow:0 4px 20px rgba(0,0,0,0.12);
+                font-size:14px; font-weight:600;
+                animation: slideInToast 0.3s ease;
+                max-width:320px;
+            `;
+            toast.innerHTML = `
+                <div style="width:28px;height:28px;border-radius:50%;background:${c.iconBg};color:${c.iconColor};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${c.icon}</div>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+
+            if (!document.getElementById('toast-style')) {
+                const style = document.createElement('style');
+                style.id = 'toast-style';
+                style.textContent = `@keyframes slideInToast { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }`;
+                document.head.appendChild(style);
+            }
+
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                setTimeout(() => toast.remove(), 350);
+            }, 3000);
+        }
+
         /* ===============================
            KEYBOARD FILTER
         ================================ */
@@ -1003,12 +1041,12 @@
 
                 async submitVoid() {
                     if(!this.form.void_code) {
-                        Swal.fire('Error', 'Silakan masukkan kode supervisor', 'error');
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'Silakan masukkan kode supervisor', confirmButtonColor: '#ea580c' });
                         return;
                     }
 
                     if(!this.form.note) {
-                        Swal.fire('Error', 'Silakan isi alasan void', 'error');
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'Silakan isi alasan void', confirmButtonColor: '#ea580c' });
                         return;
                     }
 
@@ -1044,15 +1082,16 @@
                         const result = await res.json();
 
                         if(!res.ok || !result.success) {
-                            throw new Error(result.message || 'Gagal melakukan void');
+                            Swal.fire({ icon: 'error', title: 'Oops!', text: result.message || 'Gagal melakukan void. Coba lagi.', confirmButtonColor: '#ea580c' });
+                            return;
                         }
 
-                        Swal.fire('Berhasil', result.message, 'success').then(() => {
+                        Swal.fire({ icon: 'success', title: 'Berhasil', text: result.message, confirmButtonColor: '#ea580c' }).then(() => {
                             window.location.reload();
                         });
 
                     } catch (e) {
-                        Swal.fire('Error', e.message, 'error');
+                        Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#ea580c' });
                     } finally {
                         this.loading = false;
                     }
@@ -1115,24 +1154,27 @@
                         try {
                             result = await res.json();
                         } catch {
-                            throw new Error('Invalid JSON response');
+                            Swal.fire('Oops!', 'Response dari server tidak valid.', 'error');
+                            return;
                         }
 
                         if(!res.ok){
-                            throw new Error(result.message || 'Server error');
+                            Swal.fire('Oops!', result.message || 'Terjadi kesalahan pada server. Coba lagi.', 'error');
+                            return;
                         }
 
                         if(!result.success){
-                            throw new Error(result.message || 'Print gagal');
+                            Swal.fire('Oops!', result.message || 'Print gagal. Coba lagi.', 'error');
+                            return;
                         }
 
-                        alert('Print berhasil!');
+                        showToast('Struk berhasil dicetak', 'success');
                         console.log('🖨️ PRINT SUCCESS', result);
 
                     } catch(err){
 
                         console.error(err);
-                        alert(err.message || 'Tidak bisa menghubungi server');
+                        Swal.fire('Oops!', err.message || 'Tidak bisa menghubungi server', 'error');
 
                     } finally {
 
@@ -1282,8 +1324,8 @@
                             },
                             body: JSON.stringify({
                                 order_id:this.order.id,
-                                payments: this.paymentMode === 'SPLIT' 
-                                    ? this.splits 
+                                payments: this.paymentMode === 'SPLIT'
+                                    ? this.splits
                                     : [{ method: this.paymentMethod, amount: this.payAmount }]
                             })
                         });
@@ -1291,20 +1333,76 @@
                         const result = await res.json();
 
                         if(!res.ok){
-                            throw new Error(result.message || 'Server error');
+                            Swal.fire('Oops!', result.message || 'Terjadi kesalahan pada server. Coba lagi.', 'error');
+                            return;
                         }
 
                         if(!result.success){
-                            throw new Error(result.message || 'Gagal bayar');
+                            Swal.fire('Oops!', result.message || 'Pembayaran gagal. Coba lagi.', 'error');
+                            return;
                         }
 
+                        // ===== SPLIT =====
+                        if (this.paymentMode === 'SPLIT') {
+                            const splitLines = this.splits
+                                .map(s => `<b>${s.method}</b>: Rp ${s.amount.toLocaleString('id-ID')}`)
+                                .join('<br>');
+                            const kembalian = this.splitConfirmedTotal() - this.remaining;
+                            const kembalianBaris = kembalian > 0
+                                ? `<br><br>Kembalian: <b>Rp ${kembalian.toLocaleString('id-ID')}</b>`
+                                : '';
+                            await Swal.fire({
+                                icon: 'success',
+                                title: 'Pembayaran Berhasil!',
+                                html: splitLines + kembalianBaris,
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#ea580c',
+                            });
+                            this.close();
+                            window.location.reload();
+                            return;
+                        }
+
+                        // ===== FULL / CASH dengan kembalian =====
+                        const change = Math.max(0, this.payAmount - this.remaining);
+                        if (this.paymentMethod === 'CASH' && change > 0) {
+                            await Swal.fire({
+                                icon: 'success',
+                                title: 'Pembayaran Berhasil!',
+                                html: `Kembalian: <b>Rp ${change.toLocaleString('id-ID')}</b>`,
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#ea580c',
+                            });
+                            this.close();
+                            window.location.reload();
+                            return;
+                        }
+
+                        // ===== FULL / non-cash atau pas =====
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Pembayaran Berhasil!',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#ea580c',
+                        });
                         this.close();
                         window.location.reload();
 
                     }catch(err){
 
                         console.error(err);
-                        alert(err.message || 'Terjadi kesalahan');
+                        const retryResult = await Swal.fire({
+                            icon: 'error',
+                            title: 'Koneksi Gagal',
+                            text: err.message || 'Tidak dapat terhubung ke server.',
+                            showCancelButton: true,
+                            confirmButtonText: 'Coba Lagi',
+                            cancelButtonText: 'Batal',
+                            confirmButtonColor: '#ea580c',
+                        });
+                        if (retryResult.isConfirmed) {
+                            this.submitPayment();
+                        }
 
                     }
 

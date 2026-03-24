@@ -654,7 +654,7 @@
                             <div class="space-y-2">
                                 <label class="text-sm font-medium">Mode Pembayaran</label>
 
-                                <div class="grid grid-cols-3 gap-2">
+                                <div class="grid grid-cols-2 gap-2">
                                     <button
                                         type="button"
                                         @click="setPaymentMode('FULL')"
@@ -662,15 +662,6 @@
                                         class="rounded-md py-2 text-sm font-semibold"
                                     >
                                         Bayar Lunas
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        @click="setPaymentMode('DP')"
-                                        :class="paymentMode==='DP' ? 'bg-orange-600 text-white' : 'border hover:bg-orange-100'"
-                                        class="rounded-md py-2 text-sm font-semibold"
-                                    >
-                                        DP
                                     </button>
 
                                     <button
@@ -1166,12 +1157,12 @@
                 openPayment() {
 
                     if (this.cart.length === 0) {
-                        alert('Keranjang masih kosong');
+                        Swal.fire('Perhatian', 'Keranjang masih kosong', 'warning');
                         return;
                     }
 
                     if (!this.orderType) {
-                        alert('Tipe Pesanan wajib dipilih');
+                        Swal.fire('Perhatian', 'Tipe Pesanan wajib dipilih', 'warning');
                         return;
                     }
 
@@ -1231,7 +1222,7 @@
                 // =====================
                 async processPayment() {
                     if (this.paymentType === 'DRAFT' && !this.customerName?.trim()) {
-                        alert('Nama customer masih kosong');
+                        Swal.fire('Perhatian', 'Nama customer masih kosong', 'warning');
                         return;
                     }
 
@@ -1264,7 +1255,7 @@
                                 payment_type: this.paymentType,
 
                                 payment: this.paymentType === 'PAY'
-                                    ? (this.paymentMode === 'SPLIT' 
+                                    ? (this.paymentMode === 'SPLIT'
                                         ? { mode: 'SPLIT', splits: this.splits }
                                         : { mode: this.paymentMode, method: this.paymentMethod, amount: this.payAmount }
                                     )
@@ -1283,31 +1274,93 @@
                         // ===== HTTP ERROR =====
                         if (!res.ok) {
                             console.error('HTTP ERROR:', res.status, result);
-                            alert(result.message || 'Server error');
+                            Swal.fire('Oops!', result.message || 'Terjadi kesalahan pada server. Coba lagi.', 'error');
                             return;
                         }
 
                         // ===== APP ERROR =====
                         if (!result.success) {
                             console.error('APP ERROR:', result);
-                            alert(result.message || 'Terjadi kesalahan');
+                            Swal.fire('Oops!', result.message || 'Terjadi kesalahan. Coba lagi.', 'error');
                             return;
                         }
 
                         console.log('SUCCESS:', result);
-                        alert('Order berhasil');
 
-                        // printReceipt(receipt);
+                        // ===== DRAFT / OPEN BILL =====
+                        if (this.paymentType === 'DRAFT') {
+                            await Swal.fire({
+                                icon: 'success',
+                                title: 'Open Bill Tersimpan!',
+                                text: 'Order open bill berhasil disimpan.',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#ea580c',
+                            });
+                            this.resetOrder();
+                            this.paymentOpen = false;
+                            return;
+                        }
+
+                        // ===== SPLIT =====
+                        if (this.paymentMode === 'SPLIT') {
+                            const splitLines = this.splits
+                                .map(s => `<b>${s.method}</b>: Rp ${s.amount.toLocaleString('id-ID')}`)
+                                .join('<br>');
+                            const kembalian = this.splitConfirmedTotal() - this.finalTotal();
+                            const kembalianBaris = kembalian > 0
+                                ? `<br><br>Kembalian: <b>Rp ${kembalian.toLocaleString('id-ID')}</b>`
+                                : '';
+                            await Swal.fire({
+                                icon: 'success',
+                                title: 'Order Berhasil!',
+                                html: splitLines + kembalianBaris,
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#ea580c',
+                            });
+                            this.resetOrder();
+                            this.paymentOpen = false;
+                            return;
+                        }
+
+                        // ===== FULL / CASH dengan kembalian =====
+                        if (this.paymentMethod === 'CASH' && this.change > 0) {
+                            await Swal.fire({
+                                icon: 'success',
+                                title: 'Order Berhasil!',
+                                html: `Kembalian: <b>Rp ${this.change.toLocaleString('id-ID')}</b>`,
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#ea580c',
+                            });
+                            this.resetOrder();
+                            this.paymentOpen = false;
+                            return;
+                        }
+
+                        // ===== FULL / non-cash atau pas =====
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Order Berhasil!',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#ea580c',
+                        });
+                        this.resetOrder();
+                        this.paymentOpen = false;
 
                     } catch (err) {
 
                         console.error('FETCH ERROR:', err);
-                        alert('Gagal memproses order');
-
-                    } finally {
-
-                        this.resetOrder();
-                        this.paymentOpen = false;
+                        const retryResult = await Swal.fire({
+                            icon: 'error',
+                            title: 'Koneksi Gagal',
+                            text: 'Tidak dapat terhubung ke server.',
+                            showCancelButton: true,
+                            confirmButtonText: 'Coba Lagi',
+                            cancelButtonText: 'Batal',
+                            confirmButtonColor: '#ea580c',
+                        });
+                        if (retryResult.isConfirmed) {
+                            this.processPayment();
+                        }
 
                     }
                 },
@@ -1316,15 +1369,28 @@
                 // RESET ORDER
                 // =====================
                 resetOrder() {
-                    this.orderType = '';
-                    this.orderChannel = '';
-                    this.tableNumber = '';
                     this.cart = [];
                     this.subTotal = 0;
+                    this.taxTotal = 0;
                     this.adjustmentTotal = 0;
                     this.grandTotal = 0;
-                    this.paymentOpen = false;
+
+                    this.orderType = 'Dine In';
+                    this.orderChannel = '';
+                    this.tableNumber = '';
+
+                    this.paymentType = 'PAY';
+                    this.paymentMode = 'FULL';
+                    this.paymentMethod = 'CASH';
                     this.payAmount = 0;
+                    this.remainingAmount = 0;
+                    this.splits = [{ method: 'CASH', amount: 0, confirmed: false }];
+
+                    this.customerName = '';
+                    this.customerPhone = '';
+                    this.draftNote = '';
+
+                    this.paymentOpen = false;
                 },
 
                 isMobile() {
@@ -1448,7 +1514,7 @@
                     );
 
                     if (byBarcode && byBarcode.stock <= 0) {
-                        alert('Stok habis');
+                        Swal.fire('Perhatian', 'Stok habis', 'warning');
                         this.search = '';
                         return;
                     }
