@@ -184,6 +184,7 @@
                             time: '{{ $order->created_at->format('H.i') }}',
                             reorder_url: '{{ route('transaction.list-order.reorder', $order) }}',
                             items: {{ $order->items->map(fn($i) => [
+                                'id'        => $i->id,
                                 'name'      => $i->name_snapshot,
                                 'qty'       => $i->qty,
                                 'subtotal'  => $i->subtotal,
@@ -394,25 +395,34 @@
                                                 </p>
 
                                                 <div class="flex gap-2 mt-2 text-xs">
-                                <span x-show="item.done_qty > 0"
-                                      class="px-2 py-0.5 rounded bg-green-100 text-green-700">
-                                    Done <span x-text="item.done_qty"></span>
-                                </span>
+                                                    <span x-show="item.done_qty > 0"
+                                                          class="px-2 py-0.5 rounded bg-green-100 text-green-700">
+                                                        Done <span x-text="item.done_qty"></span>
+                                                    </span>
 
                                                     <span x-show="item.void_qty > 0"
-                                                          class="px-2 py-0.5 rounded bg-red-100 text-red-700">
-                                    Void <span x-text="item.void_qty"></span>
-                                </span>
+                                                              class="px-2 py-0.5 rounded bg-red-100 text-red-700">
+                                                        Void <span x-text="item.void_qty"></span>
+                                                    </span>
                                                 </div>
                                             </div>
 
-                                            <div class="text-right">
-                                            <span class="text-xs px-2 py-0.5 rounded bg-gray-100">
-                                                x<span x-text="item.qty"></span>
-                                            </span>
-                                                <p class="font-semibold text-orange-600"
-                                                   x-text="formatRp(item.subtotal)">
-                                                </p>
+                                            <div class="text-right flex flex-col items-end gap-2">
+                                                <button type="button" 
+                                                        x-show="item.qty - item.void_qty > 0 && payload?.status != 'VOIDED'" 
+                                                        @click="$dispatch('open-void-modal', {type:'ITEM', orderId: payload.id, itemId: item.id, itemName: item.name, maxQty: item.qty - item.void_qty})" 
+                                                        class="text-red-500 hover:bg-red-50 p-1 rounded-md" 
+                                                        title="Void Item">
+                                                    <i class="fa fa-ban"></i>
+                                                </button>
+                                                <div class="text-right mt-auto">
+                                                    <span class="text-xs px-2 py-0.5 rounded bg-gray-100">
+                                                        x<span x-text="item.qty - item.void_qty"></span>
+                                                    </span>
+                                                    <p class="font-semibold text-orange-600"
+                                                       x-text="formatRp(item.subtotal / item.qty * (item.qty - item.void_qty))">
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     </template>
@@ -490,7 +500,14 @@
 
                     <!-- LEFT -->
                     <div>
-
+                        <button
+                            x-show="payload?.status != 'VOIDED'"
+                            class="px-4 py-2 text-red-600 rounded-lg hover:bg-red-50 flex items-center gap-2 font-medium"
+                            @click="$dispatch('open-void-modal', {type:'NOTA', orderId: payload.id})"
+                        >
+                            <i class="fa-solid fa-ban"></i>
+                            Void Nota
+                        </button>
                     </div>
 
                     <!-- RIGHT -->
@@ -780,8 +797,121 @@
         </div>
 
         @include('components.virtual-keyboard')
+        <!-- VOID MODAL -->
+        <div
+            x-data="voidModal()"
+            x-show="open"
+            x-cloak
+            x-on:open-void-modal.window="openModal($event.detail)"
+            class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+        >
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="close()"></div>
+
+            <!-- Modal Content -->
+            <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <!-- Header -->
+                <div class="bg-red-50 p-4 border-b border-red-100 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                            <i class="fa-solid fa-ban text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-error-900 font-bold text-lg" x-text="type === 'ITEM' ? 'Void Item' : 'Void Nota'"></h3>
+                            <p class="text-error-600 text-sm">Otorisasi Supervisor diperlukan</p>
+                        </div>
+                    </div>
+                    <button @click="close()" class="w-8 h-8 rounded-full bg-white text-gray-400 hover:text-gray-600 hover:bg-gray-100 flex items-center justify-center transition-colors">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <div class="p-6 space-y-5">
+                    
+                    <!-- Item Info (For ITEM Mode Only) -->
+                    <div x-show="type === 'ITEM'" class="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Item yang di-void</p>
+                            <p class="font-medium text-gray-800" x-text="itemName"></p>
+                        </div>
+                    </div>
+
+                    <!-- Quantity Input (For ITEM Mode Only) -->
+                    <div x-show="type === 'ITEM'" class="space-y-1.5">
+                        <label class="text-sm font-semibold text-gray-700">Jumlah Void</label>
+                        <div class="flex items-center">
+                            <button 
+                                type="button" 
+                                @click="form.qty = Math.max(1, form.qty - 1)" 
+                                class="w-10 h-10 flex items-center justify-center bg-gray-100 border border-gray-300 rounded-l-lg hover:bg-gray-200">
+                                <i class="fa fa-minus"></i>
+                            </button>
+                            <input 
+                                type="number" 
+                                x-model.number="form.qty" 
+                                min="1" 
+                                :max="maxQty"
+                                @input="form.qty = Math.min(Math.max(1, form.qty), maxQty)"
+                                class="w-16 h-10 border-y border-gray-300 text-center focus:outline-none focus:ring-1 focus:ring-red-500 font-medium">
+                            <button 
+                                type="button" 
+                                @click="form.qty = Math.min(maxQty, form.qty + 1)" 
+                                class="w-10 h-10 flex items-center justify-center bg-gray-100 border border-gray-300 rounded-r-lg hover:bg-gray-200">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                            <span class="ml-3 text-sm text-gray-500">
+                                Maks: <span x-text="maxQty"></span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Void Code -->
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-semibold text-gray-700">Kode Supervisor <span class="text-red-500">*</span></label>
+                        <div class="relative relative-group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fa fa-lock text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="password" 
+                                x-model="form.void_code" 
+                                placeholder="Masukkan kode otorisasi" 
+                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all placeholder:text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Note -->
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-semibold text-gray-700">Alasan Void <span class="text-red-500">*</span></label>
+                        <textarea 
+                            x-model="form.note" 
+                            rows="2" 
+                            placeholder="Cth: Salah input, Customer batal..." 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-sm resize-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="bg-gray-50 p-4 border-t flex items-center justify-end gap-3">
+                    <button 
+                        @click="close()" 
+                        class="px-4 py-2 font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-colors">
+                        Batal
+                    </button>
+                    <button 
+                        @click="submitVoid()" 
+                        :disabled="loading"
+                        class="px-4 py-2 font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-spinner fa-spin" x-show="loading"></i>
+                        <span x-text="loading ? 'Memproses...' : 'Konfirmasi Void'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
-@endsection
+    @endsection
 
 @push('js')
     <script>
@@ -828,6 +958,104 @@
 
                     this.activeInput.value = ''
                     this.activeInput.dispatchEvent(new Event('input'))
+                }
+            }
+        }
+
+        /* ===============================
+           VOID MODAL
+        ================================ */
+        function voidModal() {
+            return {
+                open: false,
+                loading: false,
+                type: 'ITEM', // or 'NOTA'
+                orderId: null,
+                itemId: null,
+                itemName: '',
+                maxQty: 0,
+                
+                form: {
+                    qty: 1,
+                    void_code: '',
+                    note: ''
+                },
+
+                openModal(payload) {
+                    this.type = payload.type;
+                    this.orderId = payload.orderId;
+                    this.itemId = payload.itemId || null;
+                    this.itemName = payload.itemName || '';
+                    this.maxQty = payload.maxQty || 0;
+                    
+                    this.form = {
+                        qty: this.maxQty > 0 ? 1 : 0,
+                        void_code: '',
+                        note: ''
+                    };
+                    
+                    this.open = true;
+                },
+
+                close() {
+                    this.open = false;
+                },
+
+                async submitVoid() {
+                    if(!this.form.void_code) {
+                        Swal.fire('Error', 'Silakan masukkan kode supervisor', 'error');
+                        return;
+                    }
+
+                    if(!this.form.note) {
+                        Swal.fire('Error', 'Silakan isi alasan void', 'error');
+                        return;
+                    }
+
+                    this.loading = true;
+
+                    const url = this.type === 'ITEM' 
+                        ? '{{ route('transaction.void.item') }}' 
+                        : '{{ route('transaction.void.nota') }}';
+
+                    const payloadData = this.type === 'ITEM' 
+                        ? {
+                            order_item_id: this.itemId,
+                            qty: this.form.qty,
+                            void_code: this.form.void_code,
+                            note: this.form.note
+                        } 
+                        : {
+                            order_id: this.orderId,
+                            void_code: this.form.void_code,
+                            note: this.form.note
+                        };
+
+                    try {
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify(payloadData)
+                        });
+
+                        const result = await res.json();
+
+                        if(!res.ok || !result.success) {
+                            throw new Error(result.message || 'Gagal melakukan void');
+                        }
+
+                        Swal.fire('Berhasil', result.message, 'success').then(() => {
+                            window.location.reload();
+                        });
+
+                    } catch (e) {
+                        Swal.fire('Error', e.message, 'error');
+                    } finally {
+                        this.loading = false;
+                    }
                 }
             }
         }

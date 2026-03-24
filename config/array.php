@@ -99,6 +99,11 @@ return [
                 'class' => 'bg-red-100 text-red-700',
                 'icon'  => 'fa-xmark'
             ],
+            'voided' => [
+                'label' => 'Void',
+                'class' => 'bg-red-200 text-red-800 font-bold border border-red-300',
+                'icon'  => 'fa-ban'
+            ],
         ],
         'payment_status' => [
             'unpaid'  => [
