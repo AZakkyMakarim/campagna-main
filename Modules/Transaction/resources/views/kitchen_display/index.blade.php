@@ -122,11 +122,11 @@
 
                         <!-- ITEMS -->
                         <div class="space-y-1.5">
-                            <template x-for="item in order.items" :key="item.id">
+                            <template x-for="item in order.items.filter(i => (i.void_qty ?? 0) < i.qty)" :key="item.id">
                                 <div class="flex items-center justify-between text-sm">
                                     <span class="truncate flex-1" x-text="item.name_snapshot"></span>
                                     <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold bg-secondary ml-2 text-xs">
-                                        x<span x-text="item.qty"></span>
+                                        x<span x-text="item.qty - (item.void_qty ?? 0)"></span>
                                     </div>
                                 </div>
                             </template>
@@ -225,8 +225,14 @@
                                             <span
                                                 class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 font-semibold"
                                             >
-                                x<span x-text="item.qty"></span>
+                                x<span x-text="item.qty - (item.void_qty ?? 0)"></span>
                             </span>
+
+                                            <template x-if="(item.void_qty ?? 0) > 0">
+                                                <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600 font-semibold">
+                                                    void x<span x-text="item.void_qty"></span>
+                                                </span>
+                                            </template>
 
                                         </div>
 
@@ -335,7 +341,10 @@
 
                     const groups = {};
 
-                    items.forEach(i => {
+                    // filter item yang fully voided
+                    const activeItems = items.filter(i => (i.void_qty ?? 0) < i.qty);
+
+                    activeItems.forEach(i => {
                         const cat = (i.menu.category ?? 'lainnya')
                             .toLowerCase()
                             .trim();
@@ -456,14 +465,14 @@
                 },
 
                 progressPercent(order) {
-                    const total = order.items.reduce((t, i) => t + (i.qty || 0), 0);
+                    const total = order.items.reduce((t, i) => t + Math.max(0, (i.qty || 0) - (i.void_qty || 0)), 0);
                     const done  = order.items.reduce((t, i) => t + (i.done_qty || 0), 0);
                     if (!total) return 0;
                     return Math.min(100, Math.round((done / total) * 100));
                 },
 
                 progressLabel(order) {
-                    const total = order.items.reduce((t, i) => t + (i.qty || 0), 0);
+                    const total = order.items.reduce((t, i) => t + Math.max(0, (i.qty || 0) - (i.void_qty || 0)), 0);
                     const done  = order.items.reduce((t, i) => t + (i.done_qty || 0), 0);
                     return `${done}/${total}`;
                 }
