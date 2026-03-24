@@ -504,7 +504,7 @@
                 // 🔁 OPEN PAYMENT
                 saveOrder() {
                     if (this.cart.length === 0) {
-                        alert('Keranjang masih kosong');
+                        Swal.fire('Perhatian', 'Keranjang masih kosong', 'warning');
                         return;
                     }
 
@@ -573,22 +573,38 @@
 
                         if (!res.ok) {
                             console.error('HTTP ERROR', res.status, result);
-                            alert(result.message || 'Server error');
+                            Swal.fire('Oops!', result.message || 'Terjadi kesalahan pada server. Coba lagi.', 'error');
                             return;
                         }
 
                         if (!result.success) {
                             console.error('APP ERROR', result);
-                            alert(result.message);
+                            Swal.fire('Oops!', result.message || 'Terjadi kesalahan.', 'error');
                             return;
                         }
 
-                        alert('Order berhasil!');
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Reorder Berhasil!',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#ea580c',
+                        });
                         window.location.href = "{{ route('transaction.list-order') }}";
 
                     } catch (err) {
                         console.error('FETCH ERROR', err);
-                        alert('Gagal memproses order');
+                        const retryResult = await Swal.fire({
+                            icon: 'error',
+                            title: 'Koneksi Gagal',
+                            text: 'Tidak dapat terhubung ke server.',
+                            showCancelButton: true,
+                            confirmButtonText: 'Coba Lagi',
+                            cancelButtonText: 'Batal',
+                            confirmButtonColor: '#ea580c',
+                        });
+                        if (retryResult.isConfirmed) {
+                            this.processPayment();
+                        }
                     }
                 },
 
@@ -609,17 +625,17 @@
 
                 saveOrderMeta() {
                     if (!this.orderType) {
-                        alert('Tipe Pesanan wajib dipilih');
+                        Swal.fire('Perhatian', 'Tipe Pesanan wajib dipilih', 'warning');
                         return;
                     }
 
                     if (!this.orderChannel) {
-                        alert('Jenis Order wajib dipilih');
+                        Swal.fire('Perhatian', 'Jenis Order wajib dipilih', 'warning');
                         return;
                     }
 
                     if (this.orderType === 'dine_in' && !this.tableNumber) {
-                        alert('Nomor pager wajib diisi untuk Dine In');
+                        Swal.fire('Perhatian', 'Nomor pager wajib diisi untuk Dine In', 'warning');
                         return;
                     }
 
@@ -628,17 +644,17 @@
 
                 confirmOrderMeta() {
                     if (!this.orderType) {
-                        alert('Tipe Pesanan wajib dipilih');
+                        Swal.fire('Perhatian', 'Tipe Pesanan wajib dipilih', 'warning');
                         return;
                     }
 
                     if (!this.orderChannel) {
-                        alert('Jenis Order wajib dipilih');
+                        Swal.fire('Perhatian', 'Jenis Order wajib dipilih', 'warning');
                         return;
                     }
 
                     if (this.orderType === 'dine_in' && !this.tableNumber) {
-                        alert('Nomor pager wajib diisi untuk Dine In');
+                        Swal.fire('Perhatian', 'Nomor pager wajib diisi untuk Dine In', 'warning');
                         return;
                     }
 
@@ -773,7 +789,7 @@
                     );
 
                     if (byBarcode && byBarcode.stock <= 0) {
-                        alert('Stok habis');
+                        Swal.fire('Perhatian', 'Stok habis', 'warning');
                         this.search = '';
                         return;
                     }
@@ -811,6 +827,44 @@
 
         function formatRp(n) {
             return new Intl.NumberFormat('id-ID').format(n || 0);
+        }
+
+        function showToast(message, type = 'success') {
+            const colors = {
+                success: { bg: '#fff7ed', border: '#fed7aa', icon: '\u2713', iconBg: '#ea580c', iconColor: '#fff', text: '#9a3412' },
+                error:   { bg: '#fef2f2', border: '#fecaca', icon: '\u2717', iconBg: '#dc2626', iconColor: '#fff', text: '#991b1b' },
+            };
+            const c = colors[type] || colors.success;
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position:fixed; bottom:24px; right:24px; z-index:9999;
+                display:flex; align-items:center; gap:12px;
+                background:${c.bg}; border:1px solid ${c.border}; color:${c.text};
+                padding:12px 20px; border-radius:12px;
+                box-shadow:0 4px 20px rgba(0,0,0,0.12);
+                font-size:14px; font-weight:600;
+                animation: slideInToast 0.3s ease;
+                max-width:320px;
+            `;
+            toast.innerHTML = `
+                <div style="width:28px;height:28px;border-radius:50%;background:${c.iconBg};color:${c.iconColor};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${c.icon}</div>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+
+            if (!document.getElementById('toast-style')) {
+                const style = document.createElement('style');
+                style.id = 'toast-style';
+                style.textContent = `@keyframes slideInToast { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }`;
+                document.head.appendChild(style);
+            }
+
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                setTimeout(() => toast.remove(), 350);
+            }, 3000);
         }
     </script>
 @endpush
