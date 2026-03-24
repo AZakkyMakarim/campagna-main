@@ -49,6 +49,9 @@ Route::domain('cashier.' .config('app.domain'))->middleware(['auth', 'ensure.bus
         Route::post('/store', [ListOrderController::class, 'store'])->name('transaction.list-order.store');
         Route::post('/pay', [ListOrderController::class, 'pay'])->name('transaction.list-order.pay');
         Route::post('/print-struck', [ListOrderController::class, 'printStruck'])->name('transaction.print-struck');
+        
+        Route::post('/void-item', [\Modules\Transaction\Http\Controllers\VoidController::class, 'voidItem'])->name('transaction.void.item');
+        Route::post('/void-nota', [\Modules\Transaction\Http\Controllers\VoidController::class, 'voidNota'])->name('transaction.void.nota');
     });
 
     Route::prefix('kitchen-display')->middleware(['ensure.shift.active'])->group(function (){

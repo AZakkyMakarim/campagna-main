@@ -49,14 +49,17 @@
 
 
             <div>
-                <input
-                    type="text"
+                <select
                     name="category"
-                    value="{{ request('category') }}"
-                    placeholder="Kategori"
-{{--                    @focus="setActiveInput($event.target)"--}}
-                    class="w-full text-gray-700 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    class="w-full appearance-none p-2 pr-10 rounded-lg
+                   border border-gray-300 bg-white text-gray-700 text-sm
+                   focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
+                    <option value="">Pilih kategori</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category }}" @selected(request('category') == $category)>{{ strtoupper($category) }}</option>
+                    @endforeach
+                </select>
             </div>
 
             <div class="relative">

@@ -30,6 +30,17 @@ if (!function_exists('subdomain')) {
     }
 }
 
+
+if (!function_exists('sort_link')) {
+    function sort_link($column) {
+        $direction = request('direction') === 'asc' ? 'desc' : 'asc';
+        return request()->fullUrlWithQuery([
+            'sort' => $column,
+            'direction' => $direction
+        ]);
+    }
+}
+
 if (!function_exists('calculate_rounding')) {
     function calculate_rounding(int $amount): int
     {

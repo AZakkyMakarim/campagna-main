@@ -150,13 +150,13 @@
                         <div>
 
                             <div class="flex justify-between text-sm mb-1">
-                        <span class="text-gray-600">
-                            {{ strtoupper($method->method) }}
-                        </span>
+        <span class="text-gray-600">
+            {{ strtoupper($method->method) }}
+        </span>
 
                                 <span class="font-semibold">
-                            {{ $method->percent }}%
-                        </span>
+            {{ $method->percent }}%
+        </span>
                             </div>
 
                             <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -166,9 +166,10 @@
                                 </div>
                             </div>
 
-                            <p class="text-xs text-gray-400 mt-1">
-                                {{ rp_format($method->total) }}
-                            </p>
+                            <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                <span>{{ rp_format($method->total) }}</span>
+                                <span>{{ $method->total_transaction }} transaksi</span>
+                            </div>
 
                         </div>
 

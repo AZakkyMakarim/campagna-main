@@ -12,7 +12,7 @@
 <body class="bg-gray-50 text-gray-900">
 
 <div x-data="{ activeModule: '{{ @$activeModule }}', activeMenu: '{{ @$activeMenu }}', activeSubmenu: '{{ @$activeSubmenu }}' }" class="min-h-screen flex flex-col bg-background">
-    <div class="flex flex-1 overflow-hidden" x-data="{ sidebarOpen: false }">
+    <div class="flex flex-1 overflow-hidden" x-data="{ sidebarOpen: !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) }">
         <aside
             x-show="sidebarOpen && activeModule"
             x-transition
